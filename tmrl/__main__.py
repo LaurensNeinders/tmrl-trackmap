@@ -43,10 +43,12 @@ def main(args):
         elif args.benchmark:
             rw.run_env_benchmark(nb_steps=1000, test=False)
         else:
-            rw.run_episodes(1500,10)
+            rw.run_episodes(1500,15)
 
-            x,z,color = get_coordinates()
-            plt.scatter(x,z,c=color)
+            l_x,l_z,r_x,r_z,color = get_coordinates()
+            x = l_x + r_x
+            z = l_z + r_z
+            plt.scatter(x,z)
             plt.show()
     elif args.trainer:
         trainer = Trainer(training_cls=cfg_obj.TRAINER,

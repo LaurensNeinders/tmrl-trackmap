@@ -1,5 +1,6 @@
-import numpy as np
+import keyboard
 
-print(np.rad2deg(0.3))
-print(np.rad2deg(-0.3))
-print(44*488//49)
+while True:
+    if keyboard.read_key() == "+":
+        print("hello")
+        break

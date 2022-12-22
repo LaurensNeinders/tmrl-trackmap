@@ -10,6 +10,7 @@ from collections import deque
 import cv2
 import gym.spaces as spaces
 import numpy as np
+from keyboard import is_pressed
 
 
 # third-party imports
@@ -30,15 +31,22 @@ NB_OBS_FORWARD = 500  # this allows (and rewards) 50m cuts
 
 # Custom variables
 
-coordinates_x = []
-coordinates_z = []
+coordinates_left_x = []
+coordinates_left_z = []
+coordinates_right_x = []
+coordinates_right_z = []
+coordinates_right_y = []
 colormap = []
+last_position = 0
+
+map_left = np.loadtxt('saved_tracks/track_left.csv', delimiter=',')
 
 # Interface for Trackmania 2020 ========================================================================================
 
 
 def get_coordinates():
-    return coordinates_x,coordinates_z,colormap
+    return np.array(coordinates_left_x), np.array(coordinates_left_z), np.array(coordinates_right_x), np.array(coordinates_right_z), colormap
+
 
 class TM2020Interface(RealTimeGymInterface):
     """
@@ -467,6 +475,8 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         self.record = record
         self.window_interface = None
         self.lidar = None
+        self.last_pos = [0,0]
+
 
 
     def grab_lidar_speed_and_data(self):
@@ -491,22 +501,18 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         img, speed, data = self.grab_lidar_speed_and_data() # img is lidar
 
 
+        # Distance calculations
+        lidar_arr = np.array(img) #lidar measurements
 
-        # print("pitch: ", pitch)
-        # print("CamPitch",np.rad2deg(np.arcsin(pitch)))
-        #Distance calculations
-        lidar_arr = np.array(img)
-
-        # variables
-
+        # settings
         filter = True
         pitch_roll_adjustment = True
         ground_height = 10
 
-        yaw = data[11] # get the angle which the car is facing
-        pitch = data[12]
-        roll = data[13]
 
+        yaw = data[11]      # angle the car is facing
+        pitch = data[12]    # angle for how much the camera is up or down
+        roll = data[13]     # angle for how much the camera rolls
         cam_height = data[16]-ground_height
 
         filter_list = np.full((len(lidar_arr),),True)
@@ -518,44 +524,31 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
 
         distances_pixels = np.array(lidar_arr)+10 # lidar_arr is that array of lidar observations, +20 is because a line only starts 20 pixels from the starting position, so that needs to be corrected.
         distances_pixels_horizontal_temp = distances_pixels*np.sin(np.deg2rad(angles)) # the amount of pixels in the horizontal axis of a line
-        # print("distance pixels" ,distances_pixels[3])
-        # print("angle",angles[3])
+
+
         if pitch_roll_adjustment:
-            distances_pixels_vertical = distances_pixels * cosine + (np.tan(roll)*distances_pixels_horizontal_temp)# amount of pixels in the vertical axis of a line adjusted for roll
+            distances_pixels_vertical = distances_pixels * cosine + (np.tan(np.arcsin(roll))*distances_pixels_horizontal_temp)# amount of pixels in the vertical axis of a line adjusted for roll
             distances_pixels = distances_pixels_vertical/cosine
         else:
             distances_pixels_vertical = distances_pixels * cosine # amount of pixels in the vertical axis of a line
-        # print("distance vert pix: ", distances_pixels_vertical[3])
 
 
         distances_pixels_horizontal = distances_pixels*np.sin(np.deg2rad(angles)) # the amount of pixels in the horizontal axis of a line
-        # print("distance hor pix:", distances_pixels_horizontal[3])
-        # horizontal distances
-        # angles_2 = (distances_pixels_horizontal/958)*152.1 # distances_pixels_horizontal/958 is the proportion of the screen that the horizontal part of the line takes, *152.1 is the horizontal FOV of the camera
         angles_2 = (distances_pixels_horizontal/958)*152.1 # distances_pixels_horizontal/958 is the proportion of the screen that the horizontal part of the line takes, *152.1 is the horizontal FOV of the camera
 
         if pitch_roll_adjustment:
             # distances_3d_space_vertical = cam_height *(np.tan(np.deg2rad((((distances_pixels_vertical+49-2)/488)*80)+50+(np.rad2deg(np.arcsin(pitch)))))) # The vertical distance in 3d space of a line
-            # distances_3d_space_vertical = cam_height *(np.tan(np.deg2rad((((distances_pixels_vertical+23.626)/440.2)*80)+50-(np.rad2deg(np.arcsin(pitch)))))) # The vertical distance in 3d space of a line
             distances_3d_space_vertical = cam_height *(np.tan(np.deg2rad((((distances_pixels_vertical+21.5)/434)*80)+50+(np.rad2deg(np.arcsin(pitch)))))) # The vertical distance in 3d space of a line
-
         else:
             distances_3d_space_vertical = 1.514 *(np.tan(np.deg2rad((((distances_pixels_vertical+49-2)/488)*80)+50))) # The vertical distance in 3d space of a line
 
-        print("adjusted: ",((((distances_pixels_vertical+51.7)/488)*80)+50-(np.rad2deg(np.arcsin(pitch))))[10])
-        # print("not adjusted: ",((((distances_pixels_vertical+51.7)/488)*80)+50)[9])
         distances_3d_space_horizontal = distances_3d_space_vertical*np.tan(np.deg2rad(angles_2)) # the horizontal distance in 3d space of a line
         distances_3d_space = distances_3d_space_vertical/np.cos(np.deg2rad(angles_2)) # the distance of a line (both horizontal and vertical)
-        # print("horizontal distance space",distances_3d_space_horizontal[3])
-        # print("angles_2 ", angles_2)
-        print("vertical",distances_3d_space_vertical[9])
-        print("pixels total length", distances_pixels[9])
-        print("actual_length:", 701.18-data[17])
-        # print("angles_2", angles_2)
-        # print(distances_3d_space_vertical[10])
+
+
         # position calculations
 
-        # position of the car
+        # position of the car and camera
         cam_pos_x = data[15]
         cam_pos_z = data[17]
         pos_player_x = data[2]
@@ -576,8 +569,6 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
 
 
         # filter out some coordinates that are not accurate for making a map
-
-
         if filter:
             # filter out the lidar rays that hit the side of the window
             for i,distance in enumerate(distances_pixels_horizontal):
@@ -585,34 +576,54 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
                     filter_list[i] = False
             # filter out the lidar rays that hit too far away or negative
             for i, distance in enumerate(distances_3d_space):
-                if distance > 40 or distance < 5:
+                if distance > 15 or distance < 3:
                     filter_list[i] = False
             filter_list[0] = False
             filter_list[1] = False
             filter_list[2] = False
-            filter_list[16] = False
             filter_list[17] = False
             filter_list[18] = False
             filter_list[9] = False
+            if self.last_pos == [pos_player_x, pos_player_z]:
+                print("package loss or something like that")
+                filter_list[0:18] = False
+            if is_pressed("-"):
+                filter_list[0:18] = False
+                print("wait")
+
+
+        self.last_pos = [pos_player_x,pos_player_z]
+        left_x = pos_lidar_x[3]
+        left_z = pos_lidar_z[3]
+        right_x = pos_lidar_x[15]
+        right_z = pos_lidar_z[15]
+
+        filter_list_left = filter_list[3]
+        filter_list_right = filter_list[16]
+
 
         filtered_colormap = np.arange(len(lidar_arr))[np.array(filter_list)]
 
-        filtered_x = np.array(pos_lidar_x)[np.array(filter_list)]
-        filtered_z = np.array(pos_lidar_z)[np.array(filter_list)]
+        filtered_left_x = np.array(left_x)[np.array(filter_list_left)]
+        filtered_left_z = np.array(left_z)[np.array(filter_list_left)]
+        filtered_right_x = np.array(right_x)[np.array(filter_list_right)]
+        filtered_right_z = np.array(right_z)[np.array(filter_list_right)]
 
-        filtered_x = np.append(filtered_x,pos_player_x)
-        filtered_z = np.append(filtered_z,pos_player_z)
-        filtered_colormap = np.append(filtered_colormap, 19)
-
-        filtered_x = np.append(filtered_x,cam_pos_x)
-        filtered_z = np.append(filtered_z,cam_pos_z)
-        filtered_colormap = np.append(filtered_colormap, 20)
+        # filtered_x = np.append(filtered_x,pos_player_x)
+        # filtered_z = np.append(filtered_z,pos_player_z)
+        # # filtered_colormap = np.append(filtered_colormap, 19)
+        #
+        # filtered_x = np.append(filtered_x,cam_pos_x)
+        # filtered_z = np.append(filtered_z,cam_pos_z)
+        # filtered_colormap = np.append(filtered_colormap, 20)
 
 
         # Store all coordinates in a global coordinates list
-        coordinates_x.extend(filtered_x)
-        coordinates_z.extend(filtered_z)
-        colormap.extend(filtered_colormap)
+        coordinates_left_x.extend(filtered_left_x)
+        coordinates_left_z.extend(filtered_left_z)
+        coordinates_right_x.extend(filtered_right_x)
+        coordinates_right_z.extend(filtered_right_z)
+        # colormap.extend(filtered_colormap)
         # coordinates_x.append(pos_player_x)
         # coordinates_z.append(pos_player_z)
         # colormap.append(0)
@@ -620,6 +631,9 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         # coordinates_z.append((pos_player_z+pos_change_cam_z))
         # colormap.append(1)
 
+
+        # Cut out a portion directly in front of the car, as input for the ai
+        # print(map_left)
 
 
         rew, terminated = self.reward_function.compute_reward(pos=np.array([data[2], data[3], data[4]])) # data[2-4] are the position, from that the reward is computed

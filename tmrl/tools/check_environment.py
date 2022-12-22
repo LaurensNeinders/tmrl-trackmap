@@ -13,9 +13,11 @@ import logging
 from tmrl.custom.custom_gym_interfaces import get_coordinates
 from matplotlib import pyplot as plt
 from time import sleep
+from scipy.interpolate import splprep, splev
 
 
 def check_env_tm20lidar():
+    np.savetxt('saved_tracks/data.csv', np.array([0]), delimiter=',')
     window_interface = WindowInterface("Trackmania")
     lidar = Lidar(window_interface.screenshot())
     env_config = DEFAULT_CONFIG_DICT.copy()
@@ -26,7 +28,8 @@ def check_env_tm20lidar():
     # env_config["start_obs_capture"] = 0.4
     env = gym.make("real-time-gym-v0", config=env_config)
     o, i = env.reset()
-    rounds = 100
+    rounds = 3000
+
     current=0
     while current < rounds:
         current+=1
@@ -34,16 +37,16 @@ def check_env_tm20lidar():
         # logging.info(f"r:{r}, d:{d}")
 
         if d or t:
+            print("d: ",d)
+            print("t: ",t)
             o, i = env.reset()
         img = window_interface.screenshot()[:, :, :3]
         lidar.lidar_20(img, True)
-    x,z,color = get_coordinates()
-
+    l_x,l_z,r_x,r_z,color = get_coordinates()
     sleep(1)
+    # np.savetxt('saved_tracks/track_left.csv', [l_x,l_z], delimiter=',')
+    # np.savetxt('saved_tracks/track_right3.csv', [r_x,r_z], delimiter=',')
 
-    # color = np.arange(len(x))
-    plt.scatter(x,z,c=color)
-    plt.show()
-    # input("Press Enter to continue...")
+    print("saved track information")
 if __name__ == "__main__":
     check_env_tm20lidar()
