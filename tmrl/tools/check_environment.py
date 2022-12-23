@@ -10,7 +10,7 @@ from tmrl.custom.utils.tools import Lidar
 import logging
 
 # Custom imports
-from tmrl.custom.custom_gym_interfaces import get_coordinates
+from tmrl.custom.custom_gym_interfaces import get_coordinates, get_all_observed_track_parts
 from matplotlib import pyplot as plt
 from time import sleep
 from scipy.interpolate import splprep, splev
@@ -28,8 +28,7 @@ def check_env_tm20lidar():
     # env_config["start_obs_capture"] = 0.4
     env = gym.make("real-time-gym-v0", config=env_config)
     o, i = env.reset()
-    rounds = 3000
-
+    rounds = 1000
     current=0
     while current < rounds:
         current+=1
@@ -46,6 +45,12 @@ def check_env_tm20lidar():
     sleep(1)
     # np.savetxt('saved_tracks/track_left.csv', [l_x,l_z], delimiter=',')
     # np.savetxt('saved_tracks/track_right3.csv', [r_x,r_z], delimiter=',')
+
+    # np.savetxt('saved_tracks/observed_tracks/observed_track_l_x1.csv', np.array(get_all_observed_track_parts()[0],dtype=object), delimiter=',')
+    # np.savetxt('saved_tracks/observed_tracks/observed_track_l_z1.csv', np.array(get_all_observed_track_parts()[1],dtype=object), delimiter=',')
+    # np.savetxt('saved_tracks/observed_tracks/observed_track_r_x1.csv', np.array(get_all_observed_track_parts()[2],dtype=object), delimiter=',')
+    # np.savetxt('saved_tracks/observed_tracks/observed_track_r_z1.csv', np.array(get_all_observed_track_parts()[3],dtype=object), delimiter=',')
+    # # np.savetxt('saved_tracks/observed_tracks/observed_track_car_pos1.csv', np.array(get_all_observed_track_parts()[4],dtype=object), delimiter=',')
 
     print("saved track information")
 if __name__ == "__main__":
