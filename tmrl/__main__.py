@@ -43,11 +43,11 @@ def main(args):
         elif args.benchmark:
             rw.run_env_benchmark(nb_steps=1000, test=False)
         else:
-            rw.run_episodes(1500,15)
+            rw.run_episodes(1500,5)
 
             l_x,l_z,r_x,r_z,color = get_coordinates()
-            x = l_x + r_x
-            z = l_z + r_z
+            x = l_x.tolist() + r_x.tolist()
+            z = l_z.tolist() + r_z.tolist()
             plt.scatter(x,z)
             plt.show()
     elif args.trainer:

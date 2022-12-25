@@ -874,6 +874,7 @@ class RolloutWorker:
         """
         # if self.obs_preprocessor is not None:
         #     obs = self.obs_preprocessor(obs)
+        # print(obs)
         obs = collate([obs], device=self.device)
         with torch.no_grad():
             action = self.actor.act(obs, test=test)
@@ -1003,7 +1004,7 @@ class RolloutWorker:
         self.buffer.stat_test_return = ret
         self.buffer.stat_test_steps = steps
 
-    def run(self, test_episode_interval=50, nb_episodes=np.inf):  # TODO: check number of collected samples are collected before sending
+    def run(self, test_episode_interval=10, nb_episodes=np.inf):  # TODO: check number of collected samples are collected before sending
         """
         Runs the worker for `nb_episodes` episodes.
 

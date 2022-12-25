@@ -218,7 +218,6 @@ class REDQSACAgent(TrainingAgent):
         update_policy = (self.i_update % self.q_updates_per_policy_update == 0)
 
         o, a, r, o2, d, _ = batch
-
         if update_policy:
             pi, logp_pi = self.model.actor(o)
         # FIXME? log_prob = log_prob.reshape(-1, 1)

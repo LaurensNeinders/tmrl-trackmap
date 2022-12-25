@@ -155,6 +155,7 @@ class REDQMLPActorCritic(nn.Module):
         self.qs = ModuleList([MLPQFunction(observation_space, action_space, hidden_sizes, activation) for _ in range(self.n)])
 
     def act(self, obs, test=False):
+        print(obs)
         with torch.no_grad():
             a, _ = self.actor(obs, test, False)
             return a.numpy()

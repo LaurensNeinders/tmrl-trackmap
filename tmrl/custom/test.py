@@ -5,5 +5,7 @@ b = np.array([6,7,8,9,10])
 c = np.array([11,12,13,14,15])
 d = np.array([16,17,18,19,20])
 
-e = np.array([np.array([a,b]).T,np.array([c,d]).T])
+e = np.append(np.append(a,b),np.append(c,d))
+
+print(e.shape)
 print(e)

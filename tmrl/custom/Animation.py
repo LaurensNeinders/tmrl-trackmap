@@ -12,8 +12,8 @@ r_z = np.loadtxt('./saved_tracks/observed_tracks/observed_track_r_z1.csv', delim
 
 
 fig = plt.figure()
-plt.xlim(250, 800)
-plt.ylim(400, 850)
+plt.xlim(-400, 400)
+plt.ylim(-300, 400)
 graph, = plt.plot([], [], 'o')
 
 def animate(i):

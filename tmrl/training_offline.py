@@ -61,6 +61,7 @@ class TrainingOffline:
         self.memory = self.memory_cls(nb_steps=self.steps, device=device)
         if type(self.env_cls) == tuple:
             observation_space, action_space = self.env_cls
+            print(observation_space)
         else:
             with self.env_cls() as env:
                 observation_space, action_space = env.observation_space, env.action_space
@@ -88,6 +89,7 @@ class TrainingOffline:
             logging.info(f" Resuming training")
 
     def run_epoch(self, interface):
+
         stats = []
         state = None
 

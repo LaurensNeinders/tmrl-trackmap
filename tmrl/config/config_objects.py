@@ -8,8 +8,8 @@ import rtgym
 import tmrl.config.config_constants as cfg
 from tmrl.training_offline import TrainingOffline
 from tmrl.custom.custom_gym_interfaces import TM2020Interface, TM2020InterfaceLidar, TM2020InterfaceLidarProgress, TM2020InterfaceLidarTrackMap
-from tmrl.custom.custom_memories import MemoryTMFull, MemoryTMLidar, MemoryTMLidarProgress, get_local_buffer_sample_lidar, get_local_buffer_sample_lidar_progress, get_local_buffer_sample_tm20_imgs
-from tmrl.custom.custom_preprocessors import obs_preprocessor_tm_act_in_obs, obs_preprocessor_tm_lidar_act_in_obs,obs_preprocessor_tm_lidar_progress_act_in_obs
+from tmrl.custom.custom_memories import MemoryTMFull, MemoryTMLidar, MemoryTMLidarProgress, MemoryTMLidarTrackMap, get_local_buffer_sample_lidar, get_local_buffer_sample_lidar_progress, get_local_buffer_sample_tm20_imgs, get_local_buffer_sample_lidar_track_map
+from tmrl.custom.custom_preprocessors import obs_preprocessor_tm_act_in_obs, obs_preprocessor_tm_lidar_act_in_obs,obs_preprocessor_tm_lidar_progress_act_in_obs,obs_preprocessor_tm_lidar_track_map_act_in_obs
 from tmrl.envs import GenericGymEnv
 from tmrl.custom.custom_models import SquashedGaussianMLPActor, MLPActorCritic, REDQMLPActorCritic, RNNActorCritic, SquashedGaussianRNNActor, SquashedGaussianVanillaCNNActor, VanillaCNNActorCritic
 from tmrl.custom.custom_algorithms import SpinupSacAgent as SAC_Agent
@@ -60,6 +60,8 @@ for k, v in CONFIG_DICT_MODIFIERS.items():
 if cfg.PRAGMA_LIDAR:
     if cfg.PRAGMA_PROGRESS:
         SAMPLE_COMPRESSOR = get_local_buffer_sample_lidar_progress
+    elif cfg.PRAGMA_MAP:
+        SAMPLE_COMPRESSOR = get_local_buffer_sample_lidar_track_map
     else:
         SAMPLE_COMPRESSOR = get_local_buffer_sample_lidar
 else:
@@ -68,6 +70,8 @@ else:
 if cfg.PRAGMA_LIDAR:
     if cfg.PRAGMA_PROGRESS:
         OBS_PREPROCESSOR = obs_preprocessor_tm_lidar_progress_act_in_obs
+    elif cfg.PRAGMA_MAP:
+        OBS_PREPROCESSOR = obs_preprocessor_tm_lidar_track_map_act_in_obs
     else:
         OBS_PREPROCESSOR = obs_preprocessor_tm_lidar_act_in_obs
 else:
@@ -83,6 +87,8 @@ if cfg.PRAGMA_LIDAR:
     else:
         if cfg.PRAGMA_PROGRESS:
             MEM = MemoryTMLidarProgress
+        elif cfg.PRAGMA_MAP:
+            MEM = MemoryTMLidarTrackMap
         else:
             MEM = MemoryTMLidar
 else:

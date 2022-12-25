@@ -419,6 +419,8 @@ class TM2020InterfaceLidar(TM2020Interface):
             self.img_hist_len,
             19,
         ))  # lidars
+
+        print("ahhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
         return spaces.Tuple((speed, imgs))
 
 
@@ -481,7 +483,17 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         self.lidar = None
         self.last_pos = [0,0]
 
-
+    def get_observation_space(self):
+        """
+        must be a Tuple
+        """
+        speed = spaces.Box(low=0.0, high=1000.0, shape=(1, ))
+        imgs = spaces.Box(low=0.0, high=np.inf, shape=(
+            self.img_hist_len,
+            19,
+        ))  # lidars
+        track_information = spaces.Box(low=-500,high=500, shape=(600,))
+        return spaces.Tuple((speed, imgs, track_information))
 
     def grab_lidar_speed_and_data(self):
         img = self.window_interface.screenshot()[:, :, :3]
@@ -490,8 +502,6 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
             data[0],
         ], dtype='float32')
         lidar = self.lidar.lidar_20(img=img, show=False)
-
-
         return lidar, speed, data
 
     def get_obs_rew_terminated_info(self):
@@ -554,8 +564,10 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         rew, terminated = self.reward_function.compute_reward(pos=np.array([data[2], data[3], data[4]])) # data[2-4] are the position, from that the reward is computed
         self.img_hist.append(img)
         imgs = np.array(list(self.img_hist), dtype='float32')
-        # track_information = np.array([np.array([l_x,l_z]).T,np.array([r_x,r_z]).T])
-        obs = [speed, imgs] #,track_information
+
+        track_information = np.array(np.append(np.append(l_x,r_x),np.append(l_z,r_z)), dtype='float32')
+        # print(track_information)
+        obs = [speed, imgs, track_information]
         end_of_track = bool(data[8])
         info = {}
         if end_of_track:
@@ -573,7 +585,7 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         tree = spatial.KDTree(entire_map)
         (_, i) = tree.query(car_position)
         if i < len(map_left.T): # if the closest point is on the left side
-            print("left side is closer")
+            # print("left side is closer")
 
             i_l = i # this index is the index for the closest point on the left side of the track
             i_l_min = i_l
@@ -594,7 +606,7 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
             # i_r_max = i_r_max + j_min
 
         else:
-            print("right side is closer")
+            # print("right side is closer")
             i_r = i-len(map_left.T) # this index is the index for the closest point on the right side of the track
             i_r_min = i_r
             # find the nearest point on the left side of the track, but look for only nearby points
@@ -693,11 +705,11 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
             filter_list[18] = False
             filter_list[9] = False
             if self.last_pos == [pos_player_x, pos_player_z]:
-                print("package loss or something like that")
+                # print("package loss or something like that")
                 filter_list[0:18] = False
             if is_pressed("-"):
                 filter_list[0:18] = False
-                print("wait")
+                # print("wait")
 
 
         self.last_pos = [pos_player_x,pos_player_z]
@@ -731,6 +743,19 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
 
         return left_normal_x,left_normal_y,right_normal_x,right_normal_y
 
+    def reset(self):
+        """
+        obs must be a list of numpy arrays
+        """
+        self.reset_common()
+        img, speed, data = self.grab_lidar_speed_and_data()
+        for _ in range(self.img_hist_len):
+            self.img_hist.append(img)
+        imgs = np.array(list(self.img_hist), dtype='float32')
+        track_information = np.full((600,), 0,dtype='float32')
+        obs = [speed, imgs, track_information]
+        self.reward_function.reset()
+        return obs, {}
 
 
 if __name__ == "__main__":
