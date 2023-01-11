@@ -481,6 +481,7 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         self.window_interface = None
         self.lidar = None
         self.last_pos = [0,0]
+        self.index = 0
 
     def get_observation_space(self):
         """
@@ -572,7 +573,7 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
             rew += self.finish_reward
             terminated = True
             if self.save_replay:
-                mouse_save_replay_tm20()
+               mouse_save_replay_tm20()
         rew += self.constant_penalty
         rew = np.float32(rew)
         return obs, rew, terminated, info
@@ -708,6 +709,7 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
             if is_pressed("-"):
                 filter_list[0:18] = False
                 print("wait")
+            self.index+=1
 
 
         self.last_pos = [pos_player_x,pos_player_z]

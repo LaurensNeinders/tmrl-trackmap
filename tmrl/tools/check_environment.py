@@ -33,7 +33,7 @@ def check_env_tm20lidar():
     while current < rounds:
         current+=1
         o, r, d, t, i = env.step(None)
-        logging.info(f"r:{r}, d:{d}")
+        # logging.info(f"r:{r}, d:{d}")
 
         if d or t:
             print("d: ",d)
