@@ -67,7 +67,6 @@ class RewardFunction:
         else:
             self.failure_counter = 0
         self.cur_idx = best_index
-        # terminated = False # added so I don't get teleported back all the time
         return reward, terminated
 
     def reset(self):

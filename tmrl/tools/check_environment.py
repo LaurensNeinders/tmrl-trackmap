@@ -33,7 +33,7 @@ def check_env_tm20lidar():
     while current < rounds:
         current+=1
         o, r, d, t, i = env.step(None)
-        # logging.info(f"r:{r}, d:{d}")
+        logging.info(f"r:{r}, d:{d}")
 
         if d or t:
             print("d: ",d)
@@ -43,14 +43,14 @@ def check_env_tm20lidar():
         lidar.lidar_20(img, True)
     l_x,l_z,r_x,r_z,color = get_coordinates()
     sleep(1)
-    # np.savetxt('saved_tracks/track_left.csv', [l_x,l_z], delimiter=',')
-    # np.savetxt('saved_tracks/track_right3.csv', [r_x,r_z], delimiter=',')
+    # np.savetxt('saved_tracks/sm_track/track_left.csv', [l_x,l_z], delimiter=',')
+    # np.savetxt('saved_tracks/sm_track/track_right.csv', [r_x,r_z], delimiter=',')
 
-    # np.savetxt('saved_tracks/observed_tracks/observed_track_l_x1.csv', np.array(get_all_observed_track_parts()[0],dtype=object), delimiter=',')
-    # np.savetxt('saved_tracks/observed_tracks/observed_track_l_z1.csv', np.array(get_all_observed_track_parts()[1],dtype=object), delimiter=',')
-    # np.savetxt('saved_tracks/observed_tracks/observed_track_r_x1.csv', np.array(get_all_observed_track_parts()[2],dtype=object), delimiter=',')
-    # np.savetxt('saved_tracks/observed_tracks/observed_track_r_z1.csv', np.array(get_all_observed_track_parts()[3],dtype=object), delimiter=',')
-    # # np.savetxt('saved_tracks/observed_tracks/observed_track_car_pos1.csv', np.array(get_all_observed_track_parts()[4],dtype=object), delimiter=',')
+    # np.savetxt('saved_tracks/observed_tracks/observed_track_l_x1_small.csv', np.array(get_all_observed_track_parts()[0],dtype=object), delimiter=',')
+    # np.savetxt('saved_tracks/observed_tracks/observed_track_l_z1_small.csv', np.array(get_all_observed_track_parts()[1],dtype=object), delimiter=',')
+    # np.savetxt('saved_tracks/observed_tracks/observed_track_r_x1_small.csv', np.array(get_all_observed_track_parts()[2],dtype=object), delimiter=',')
+    # np.savetxt('saved_tracks/observed_tracks/observed_track_r_z1_small.csv', np.array(get_all_observed_track_parts()[3],dtype=object), delimiter=',')
+    # np.savetxt('saved_tracks/observed_tracks/observed_track_car_pos1.csv', np.array(get_all_observed_track_parts()[4],dtype=object), delimiter=',')
 
     print("saved track information")
 if __name__ == "__main__":

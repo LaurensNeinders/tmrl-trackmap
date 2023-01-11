@@ -35,12 +35,11 @@ coordinates_left_x = []
 coordinates_left_z = []
 coordinates_right_x = []
 coordinates_right_z = []
-coordinates_right_y = []
 colormap = []
 last_position = 0
 
-map_left = np.loadtxt('saved_tracks/track_left_smooth.csv', delimiter=',')
-map_right = np.loadtxt('saved_tracks/track_right_smooth.csv', delimiter=',')
+map_left = np.loadtxt('saved_tracks/sm_track/track_left_smooth_small.csv', delimiter=',')
+map_right = np.loadtxt('saved_tracks/sm_track/track_right_smooth_small.csv', delimiter=',')
 all_observed_track_parts = [[],[],[],[],[]]
 
 # Interface for Trackmania 2020 ========================================================================================
@@ -492,7 +491,7 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
             self.img_hist_len,
             19,
         ))  # lidars
-        track_information = spaces.Box(low=-500,high=500, shape=(600,))
+        track_information = spaces.Box(low=-300,high=300, shape=(80,))
         return spaces.Tuple((speed, imgs, track_information))
 
     def grab_lidar_speed_and_data(self):
@@ -531,20 +530,20 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         roll = data[13]     # angle for how much the camera rolls
         cam_height = data[16]-ground_height
 
-        filtered_left_x , filtered_left_z, filtered_right_x, filtered_right_z =  self.wall_coordinates(lidar_arr, car_position, cam_position,cam_height, yaw, pitch, roll, pitch_roll_adjustment, filter)
-
-
-        # Store all coordinates in a global coordinates list
-        coordinates_left_x.extend(filtered_left_x)
-        coordinates_left_z.extend(filtered_left_z)
-        coordinates_right_x.extend(filtered_right_x)
-        coordinates_right_z.extend(filtered_right_z)
+        # filtered_left_x , filtered_left_z, filtered_right_x, filtered_right_z =  self.wall_coordinates(lidar_arr, car_position, cam_position,cam_height, yaw, pitch, roll, pitch_roll_adjustment, filter)
+        #
+        #
+        # # Store all coordinates in a global coordinates list
+        # coordinates_left_x.extend(filtered_left_x)
+        # coordinates_left_z.extend(filtered_left_z)
+        # coordinates_right_x.extend(filtered_right_x)
+        # coordinates_right_z.extend(filtered_right_z)
         # ------------------------------------------------------------
 
         # retrieving map information --------------------------------------
         # Cut out a portion directly in front of the car, as input for the ai
-        look_ahead_distance = 150 # points out of 1000 for total track
-        nearby_correction = 100
+        look_ahead_distance = 20 # points to look ahead on the track
+        nearby_correction = 60 # one point on a side needs to be at least this close to the same point on the other side
         l_x, l_z, r_x, r_z = self.get_track_in_front(car_position, look_ahead_distance, nearby_correction)
 
 
@@ -564,7 +563,6 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         rew, terminated = self.reward_function.compute_reward(pos=np.array([data[2], data[3], data[4]])) # data[2-4] are the position, from that the reward is computed
         self.img_hist.append(img)
         imgs = np.array(list(self.img_hist), dtype='float32')
-
         track_information = np.array(np.append(np.append(l_x,r_x),np.append(l_z,r_z)), dtype='float32')
         # print(track_information)
         obs = [speed, imgs, track_information]
@@ -621,10 +619,10 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
 
 
 
-        extra = np.full((150,2),map_left.T[-1])
+        extra = np.full((look_ahead_distance,2),map_left.T[-1])
         map_left_extended = np.append(map_left.T,extra,axis=0).T
 
-        extra = np.full((150,2),map_right.T[-1])
+        extra = np.full((look_ahead_distance,2),map_right.T[-1])
         map_right_extended = np.append(map_right.T,extra,axis=0).T
 
         l_x = map_left_extended[0][i_l_min:i_l_max]
@@ -709,7 +707,7 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
                 filter_list[0:18] = False
             if is_pressed("-"):
                 filter_list[0:18] = False
-                # print("wait")
+                print("wait")
 
 
         self.last_pos = [pos_player_x,pos_player_z]
@@ -752,7 +750,7 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         for _ in range(self.img_hist_len):
             self.img_hist.append(img)
         imgs = np.array(list(self.img_hist), dtype='float32')
-        track_information = np.full((600,), 0,dtype='float32')
+        track_information = np.full((80,), 0,dtype='float32')
         obs = [speed, imgs, track_information]
         self.reward_function.reset()
         return obs, {}

@@ -2,14 +2,14 @@ from scipy import spatial
 import numpy as np
 from matplotlib import pyplot as plt
 
-map_left = np.loadtxt('../saved_tracks/track_left_smooth.csv', delimiter=',')
-map_right = np.loadtxt('../saved_tracks/track_right_smooth.csv', delimiter=',')
+map_left = np.loadtxt('../saved_tracks/track_left_smooth_small.csv', delimiter=',')
+map_right = np.loadtxt('../saved_tracks/track_right_smooth_small.csv', delimiter=',')
 
 coordinates = [ 536.2958984375 , 661.7255249023438 ]
 
-look_ahead_distance = 150 # points out of 1000 for total track
+look_ahead_distance = 25 # points out of 1000 for total track
 
-nearby_correction = 100
+nearby_correction = 60
 
 # Find point that is closest to the car, from all the points, both left and right side
 entire_map = map_left.T.tolist()+map_right.T.tolist()
