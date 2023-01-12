@@ -526,6 +526,10 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         car_position = [data[2],data[4]]
         cam_position = [data[15],data[17]]
 
+        if self.last_pos == car_position:
+
+            print("package loss or something like that")
+        self.last_pos = car_position
         yaw = data[11]      # angle the car is facing
         pitch = data[12]    # angle for how much the camera is up or down
         roll = data[13]     # angle for how much the camera rolls

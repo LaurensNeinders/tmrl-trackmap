@@ -5,12 +5,13 @@ from scipy.interpolate import splprep, splev
 l_x,l_z = np.loadtxt('../saved_tracks/sm_track/track_left.csv', delimiter=',')
 r_x,r_z = np.loadtxt('../saved_tracks/sm_track/track_right.csv', delimiter=',')
 
-total_points = 60 # points per side of the road in total
+total_points = 100 # points per side of the road in total
 plt.scatter(l_x.tolist()+r_x.tolist(),l_z.tolist()+r_z.tolist())
 plt.show()
 # calculate a curve through the left-sided points
 points_left = [l_x] + [l_z]
 tck, u = splprep(points_left, u=None, s=0.5)
+
 u_new = np.linspace(u.min(), u.max(), total_points)
 x_new, y_new = splev(u_new, tck, der=0)
 
