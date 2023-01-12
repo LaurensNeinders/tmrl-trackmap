@@ -570,6 +570,12 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         imgs = np.array(list(self.img_hist), dtype='float32')
         track_information = np.array(np.append(np.append(l_x,r_x),np.append(l_z,r_z)), dtype='float32')
         # print(track_information)
+        gear = np.array([
+            data[9],
+        ], dtype='float32')
+        rpm = np.array([
+            data[10],
+        ], dtype='float32')
         obs = [speed, imgs, track_information]
         end_of_track = bool(data[8])
         info = {}
@@ -761,6 +767,172 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         self.reward_function.reset()
         return obs, {}
 
+class TM2020InterfaceNewTrackMap(TM2020InterfaceLidar):
+    def __init__(self, img_hist_len=1, gamepad=False, min_nb_steps_before_failure=int(20 * 3.5), record=False, save_replay: bool = False):
+        super().__init__(img_hist_len, gamepad, min_nb_steps_before_failure, save_replay)
+        self.record = record
+        self.window_interface = None
+        self.lidar = None
+        self.last_pos = [0,0]
+        self.index = 0
+
+    def get_observation_space(self):
+        speed = spaces.Box(low=0.0, high=1000.0, shape=(1, ))
+        gear = spaces.Box(low=0.0, high=6, shape=(1, ))
+        rpm = spaces.Box(low=0.0, high=np.inf, shape=(1, ))
+        track_information = spaces.Box(low=-300,high=300, shape=(80,))
+        return spaces.Tuple((speed,gear,rpm,track_information))
+
+    def grab_data(self):
+        data = self.client.retrieve_data()
+        return data
+
+    def get_obs_rew_terminated_info(self):
+
+        """
+        returns the observation, the reward, and a terminated signal for end of episode
+        obs must be a list of numpy arrays
+        """
+
+
+        data = self.grab_data()
+
+
+        car_position = [data[2],data[4]]
+        yaw = data[11]      # angle the car is facing
+
+        if self.last_pos == car_position:
+            print("package loss or something")
+        self.last_pos = car_position
+        # retrieving map information --------------------------------------
+        # Cut out a portion directly in front of the car, as input for the ai
+        look_ahead_distance = 20 # points to look ahead on the track
+        nearby_correction = 60 # one point on a side needs to be at least this close to the same point on the other side
+        l_x, l_z, r_x, r_z = self.get_track_in_front(car_position, look_ahead_distance, nearby_correction)
+
+
+        #normalize the track in front
+
+        l_x, l_z, r_x, r_z = self.normalize_track(l_x, l_z, r_x, r_z,car_position,yaw)
+
+        # save the track in front in a file, so we can play it back later
+        # all_observed_track_parts[0].append(l_x.tolist())
+        # all_observed_track_parts[1].append(l_z.tolist())
+        # all_observed_track_parts[2].append(r_x.tolist())
+        # all_observed_track_parts[3].append(r_z.tolist())
+        # all_observed_track_parts[4].append(car_position)
+        # ----------------------------------------------------------------------
+
+
+        rew, terminated = self.reward_function.compute_reward(pos=np.array([data[2], data[3], data[4]])) # data[2-4] are the position, from that the reward is computed
+        track_information = np.array(np.append(np.append(l_x,r_x),np.append(l_z,r_z)), dtype='float32')
+        speed = np.array([
+            data[0],
+        ], dtype='float32')
+        gear = np.array([
+            data[9],
+        ], dtype='float32')
+        rpm = np.array([
+            data[10],
+        ], dtype='float32')
+        obs = [speed, gear, rpm, track_information]
+        end_of_track = bool(data[8])
+        info = {}
+        if end_of_track:
+            rew += self.finish_reward
+            terminated = True
+            if self.save_replay:
+                mouse_save_replay_tm20()
+        rew += self.constant_penalty
+        rew = np.float32(rew)
+        return obs, rew, terminated, info
+
+    def get_track_in_front(self, car_position, look_ahead_distance, nearby_correction):
+        # Find point that is closest to the car, from all the points, both left and right side
+        entire_map = map_left.T.tolist()+map_right.T.tolist()
+        tree = spatial.KDTree(entire_map)
+        (_, i) = tree.query(car_position)
+        if i < len(map_left.T): # if the closest point is on the left side
+            # print("left side is closer")
+
+            i_l = i # this index is the index for the closest point on the left side of the track
+            i_l_min = i_l
+            # find the nearest point on the right side of the track, but look for only nearby points
+            j_min = max(i_l_min-nearby_correction,0) # lower bound
+            j_max = min(i_l_min+nearby_correction,len(map_left.T)-1) # upper bound
+            tree_r = spatial.KDTree(map_right.T[j_min:j_max]) # look up the index of the closest point on the other side of the track
+            (_, i_r_min) = tree_r.query(map_left.T[i_l_min])
+            i_r_min = i_r_min + j_min
+
+
+
+            # #calculate the endpoint for the other side of the track
+            # j_min = max(i_l+look_ahead_distance-nearby_correction,0) # lower bound
+            # j_max = min(i_l+look_ahead_distance+nearby_correction,len(map_left.T)-1) # upper bound
+            # tree_r_far = spatial.KDTree(map_right.T[j_min:j_max]) # look up the index of the closest point
+            # (_, i_r_max) = tree_r_far.query(map_left.T[i_l_max])
+            # i_r_max = i_r_max + j_min
+
+        else:
+            # print("right side is closer")
+            i_r = i-len(map_left.T) # this index is the index for the closest point on the right side of the track
+            i_r_min = i_r
+            # find the nearest point on the left side of the track, but look for only nearby points
+            j_min = max(i_r-nearby_correction,0) # lower bound
+            j_max = min(i_r+nearby_correction,len(map_right.T)-1) # upper bound
+            tree_l = spatial.KDTree(map_left.T[j_min:j_max]) # look up the index of the closest point
+            (_, i_l_min) = tree_l.query(map_right.T[i_r])
+            i_l_min = i_l_min + j_min
+
+        i_l_max = i_l_min + look_ahead_distance
+        i_r_max = i_r_min + look_ahead_distance
+
+
+
+        extra = np.full((look_ahead_distance,2),map_left.T[-1])
+        map_left_extended = np.append(map_left.T,extra,axis=0).T
+
+        extra = np.full((look_ahead_distance,2),map_right.T[-1])
+        map_right_extended = np.append(map_right.T,extra,axis=0).T
+
+        l_x = map_left_extended[0][i_l_min:i_l_max]
+        l_z = map_left_extended[1][i_l_min:i_l_max]
+        r_x = map_right_extended[0][i_r_min:i_r_max]
+        r_z = map_right_extended[1][i_r_min:i_r_max]
+        return l_x, l_z, r_x, r_z
+
+    def normalize_track(self, l_x, l_z, r_x, r_z,car_position,yaw):
+        angle = yaw
+        left = (np.array([l_x,l_z]).T-car_position).T
+        right = (np.array([r_x,r_z]).T-car_position).T
+
+        left_normal_x = left[0] * np.cos(angle) - left[1] * np.sin(angle)
+        left_normal_y = left[0] * np.sin(angle) + left[1] * np.cos(angle)
+
+        right_normal_x = right[0] * np.cos(angle) - right[1] * np.sin(angle)
+        right_normal_y = right[0] * np.sin(angle) + right[1] * np.cos(angle)
+
+        return left_normal_x,left_normal_y,right_normal_x,right_normal_y
+
+    def reset(self):
+        """
+        obs must be a list of numpy arrays
+        """
+        self.reset_common()
+        data = self.grab_data()
+        track_information = np.full((80,), 0,dtype='float32')
+        speed = np.array([
+            data[0],
+        ], dtype='float32')
+        gear = np.array([
+            data[9],
+        ], dtype='float32')
+        rpm = np.array([
+            data[10],
+        ], dtype='float32')
+        obs = [speed, gear, rpm, track_information]
+        self.reward_function.reset()
+        return obs, {}
 
 if __name__ == "__main__":
     pass

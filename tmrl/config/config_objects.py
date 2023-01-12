@@ -7,9 +7,9 @@ import rtgym
 # local imports
 import tmrl.config.config_constants as cfg
 from tmrl.training_offline import TrainingOffline
-from tmrl.custom.custom_gym_interfaces import TM2020Interface, TM2020InterfaceLidar, TM2020InterfaceLidarProgress, TM2020InterfaceLidarTrackMap
-from tmrl.custom.custom_memories import MemoryTMFull, MemoryTMLidar, MemoryTMLidarProgress, MemoryTMLidarTrackMap, get_local_buffer_sample_lidar, get_local_buffer_sample_lidar_progress, get_local_buffer_sample_tm20_imgs, get_local_buffer_sample_lidar_track_map
-from tmrl.custom.custom_preprocessors import obs_preprocessor_tm_act_in_obs, obs_preprocessor_tm_lidar_act_in_obs,obs_preprocessor_tm_lidar_progress_act_in_obs,obs_preprocessor_tm_lidar_track_map_act_in_obs
+from tmrl.custom.custom_gym_interfaces import TM2020Interface, TM2020InterfaceLidar, TM2020InterfaceLidarProgress, TM2020InterfaceLidarTrackMap,TM2020InterfaceNewTrackMap
+from tmrl.custom.custom_memories import MemoryTMFull, MemoryTMLidar, MemoryTMLidarProgress, MemoryTMLidarTrackMap,MemoryTMNewTrackMap, get_local_buffer_sample_lidar, get_local_buffer_sample_lidar_progress, get_local_buffer_sample_tm20_imgs, get_local_buffer_sample_lidar_track_map,get_local_buffer_sample_new_track_map
+from tmrl.custom.custom_preprocessors import obs_preprocessor_tm_act_in_obs, obs_preprocessor_tm_lidar_act_in_obs,obs_preprocessor_tm_lidar_progress_act_in_obs,obs_preprocessor_tm_lidar_track_map_act_in_obs,obs_preprocessor_tm_new_track_map_act_in_obs
 from tmrl.envs import GenericGymEnv
 from tmrl.custom.custom_models import SquashedGaussianMLPActor, MLPActorCritic, REDQMLPActorCritic, RNNActorCritic, SquashedGaussianRNNActor, SquashedGaussianVanillaCNNActor, VanillaCNNActorCritic
 from tmrl.custom.custom_algorithms import SpinupSacAgent as SAC_Agent
@@ -25,7 +25,7 @@ assert ALG_NAME in ["SAC", "REDQSAC"], f"If you wish to implement {ALG_NAME}, do
 
 # MODEL, GYM ENVIRONMENT, REPLAY MEMORY AND TRAINING: ===========
 
-if cfg.PRAGMA_LIDAR:
+if cfg.PRAGMA_LIDAR :
     if cfg.PRAGMA_RNN:
         assert ALG_NAME == "SAC", f"{ALG_NAME} is not implemented here."
         TRAIN_MODEL = RNNActorCritic
@@ -44,6 +44,8 @@ if cfg.PRAGMA_LIDAR:
         INT = partial(TM2020InterfaceLidarProgress, img_hist_len=cfg.IMG_HIST_LEN, gamepad=cfg.PRAGMA_GAMEPAD)
     elif cfg.PRAGMA_MAP:
         INT = partial(TM2020InterfaceLidarTrackMap, img_hist_len=cfg.IMG_HIST_LEN, gamepad=cfg.PRAGMA_GAMEPAD)
+    elif cfg.PRAGMA_NEWTRACKMAP:
+        INT = partial(TM2020InterfaceNewTrackMap, img_hist_len=cfg.IMG_HIST_LEN, gamepad=cfg.PRAGMA_GAMEPAD)
     else:
         INT = partial(TM2020InterfaceLidar, img_hist_len=cfg.IMG_HIST_LEN, gamepad=cfg.PRAGMA_GAMEPAD)
 
@@ -62,6 +64,8 @@ if cfg.PRAGMA_LIDAR:
         SAMPLE_COMPRESSOR = get_local_buffer_sample_lidar_progress
     elif cfg.PRAGMA_MAP:
         SAMPLE_COMPRESSOR = get_local_buffer_sample_lidar_track_map
+    elif cfg.PRAGMA_NEWTRACKMAP:
+        SAMPLE_COMPRESSOR = get_local_buffer_sample_new_track_map
     else:
         SAMPLE_COMPRESSOR = get_local_buffer_sample_lidar
 else:
@@ -72,6 +76,8 @@ if cfg.PRAGMA_LIDAR:
         OBS_PREPROCESSOR = obs_preprocessor_tm_lidar_progress_act_in_obs
     elif cfg.PRAGMA_MAP:
         OBS_PREPROCESSOR = obs_preprocessor_tm_lidar_track_map_act_in_obs
+    elif cfg.PRAGMA_NEWTRACKMAP:
+        OBS_PREPROCESSOR = obs_preprocessor_tm_new_track_map_act_in_obs
     else:
         OBS_PREPROCESSOR = obs_preprocessor_tm_lidar_act_in_obs
 else:
@@ -89,6 +95,8 @@ if cfg.PRAGMA_LIDAR:
             MEM = MemoryTMLidarProgress
         elif cfg.PRAGMA_MAP:
             MEM = MemoryTMLidarTrackMap
+        elif cfg.PRAGMA_NEWTRACKMAP:
+            MEM = MemoryTMNewTrackMap
         else:
             MEM = MemoryTMLidar
 else:

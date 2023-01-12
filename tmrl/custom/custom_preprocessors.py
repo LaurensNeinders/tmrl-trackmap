@@ -39,6 +39,15 @@ def obs_preprocessor_tm_lidar_track_map_act_in_obs(obs):
     obs = (obs[0], np.ndarray.flatten(obs[1]), obs[2], *obs[3:])  # >= 1  action
     return obs
 
+def obs_preprocessor_tm_new_track_map_act_in_obs(obs):
+    """
+    Preprocessor for the new trackMap environment
+    """
+    obs = (obs[0], obs[1], obs[2], obs[3], *obs[4:])  # >= 1  action
+    return obs
+
+
+
 
 # SAMPLE PREPROCESSING =======================================
 # these can be called when sampling from the replay memory, on the whole sample
