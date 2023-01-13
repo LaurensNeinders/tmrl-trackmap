@@ -874,7 +874,6 @@ class RolloutWorker:
         """
         # if self.obs_preprocessor is not None:
         #     obs = self.obs_preprocessor(obs)
-        # print(obs)
         obs = collate([obs], device=self.device)
         with torch.no_grad():
             action = self.actor.act(obs, test=test)

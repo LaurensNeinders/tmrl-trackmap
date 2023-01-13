@@ -63,7 +63,6 @@ class SquashedGaussianMLPActor(ActorModule):
         self.act_limit = act_limit
 
     def forward(self, obs, test=False, with_logprob=True):
-
         net_out = self.net(torch.cat(obs, -1))
         mu = self.mu_layer(net_out)
         log_std = self.log_std_layer(net_out)

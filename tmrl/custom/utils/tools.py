@@ -16,7 +16,7 @@ from tmrl.config.config_constants import LIDAR_BLACK_THRESHOLD
 
 
 class TM2020OpenPlanetClient:
-    def __init__(self, host='127.0.0.1', port=9000, struct_str='<' + 'f' * 18): # 18 floats instead of 11 to accommodate for yaw, pitch, and roll and camera position.
+    def __init__(self, host='127.0.0.1', port=9000, struct_str='<' + 'f' * 25): # 25 floats instead of 11 to accommodate for yaw, pitch, and roll and camera position and other stuff.
         # Script attributes:
         self._struct_str = struct_str
         self.nb_floats = self._struct_str.count('f')

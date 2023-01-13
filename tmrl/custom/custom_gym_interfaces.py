@@ -557,11 +557,11 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         l_x, l_z, r_x, r_z = self.normalize_track(l_x, l_z, r_x, r_z,car_position,yaw)
 
         # save the track in front in a file, so we can play it back later
-        # all_observed_track_parts[0].append(l_x.tolist())
-        # all_observed_track_parts[1].append(l_z.tolist())
-        # all_observed_track_parts[2].append(r_x.tolist())
-        # all_observed_track_parts[3].append(r_z.tolist())
-        # all_observed_track_parts[4].append(car_position)
+        all_observed_track_parts[0].append(l_x.tolist())
+        all_observed_track_parts[1].append(l_z.tolist())
+        all_observed_track_parts[2].append(r_x.tolist())
+        all_observed_track_parts[3].append(r_z.tolist())
+        all_observed_track_parts[4].append(car_position)
         # ----------------------------------------------------------------------
 
 
@@ -767,6 +767,7 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         self.reward_function.reset()
         return obs, {}
 
+
 class TM2020InterfaceNewTrackMap(TM2020InterfaceLidar):
     def __init__(self, img_hist_len=1, gamepad=False, min_nb_steps_before_failure=int(20 * 3.5), record=False, save_replay: bool = False):
         super().__init__(img_hist_len, gamepad, min_nb_steps_before_failure, save_replay)
@@ -781,7 +782,11 @@ class TM2020InterfaceNewTrackMap(TM2020InterfaceLidar):
         gear = spaces.Box(low=0.0, high=6, shape=(1, ))
         rpm = spaces.Box(low=0.0, high=np.inf, shape=(1, ))
         track_information = spaces.Box(low=-300,high=300, shape=(80,))
-        return spaces.Tuple((speed,gear,rpm,track_information))
+        acceleration = spaces.Box(low=-100, high=100.0, shape=(1, ))
+        steering_angle = spaces.Box(low=-1, high=1.0, shape=(1, ))
+        slipping_tires = spaces.Box(low=0.0, high=1, shape=(4,))
+        crash = spaces.Box(low=0.0, high=1, shape=(1, ))
+        return spaces.Tuple((speed,gear,rpm,track_information,acceleration,steering_angle,slipping_tires,crash))
 
     def grab_data(self):
         data = self.client.retrieve_data()
@@ -797,6 +802,11 @@ class TM2020InterfaceNewTrackMap(TM2020InterfaceLidar):
 
         data = self.grab_data()
 
+        # acceleration = data[18]
+        # steering_angle = data[19]
+        # slipping_tires = data[20:24]
+        # print(slipping_tires)
+        # crash = data[24]
 
         car_position = [data[2],data[4]]
         yaw = data[11]      # angle the car is facing
@@ -835,9 +845,23 @@ class TM2020InterfaceNewTrackMap(TM2020InterfaceLidar):
         rpm = np.array([
             data[10],
         ], dtype='float32')
-        obs = [speed, gear, rpm, track_information]
+        acceleration = np.array([
+            data[18],
+        ], dtype='float32')
+        steering_angle = np.array([
+            data[19],
+        ], dtype='float32')
+        slipping_tires = np.array(data[20:24], dtype='float32')
+        crash = np.array([
+            data[24],
+        ], dtype='float32')
+        obs = [speed, gear, rpm, track_information,acceleration,steering_angle,slipping_tires,crash]
         end_of_track = bool(data[8])
         info = {}
+        crash_penalty = -5
+        if crash == 1:
+            rew += crash_penalty
+            print("crash penalty was given")
         if end_of_track:
             rew += self.finish_reward
             terminated = True
@@ -930,7 +954,19 @@ class TM2020InterfaceNewTrackMap(TM2020InterfaceLidar):
         rpm = np.array([
             data[10],
         ], dtype='float32')
-        obs = [speed, gear, rpm, track_information]
+
+        acceleration = np.array([
+            data[18],
+        ], dtype='float32')
+        steering_angle = np.array([
+            data[19],
+        ], dtype='float32')
+        slipping_tires = np.array(data[20:24], dtype='float32')
+        crash = np.array([
+            data[24],
+        ], dtype='float32')
+
+        obs = [speed, gear, rpm, track_information,acceleration,steering_angle,slipping_tires,crash]
         self.reward_function.reset()
         return obs, {}
 

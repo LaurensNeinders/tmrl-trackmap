@@ -26,40 +26,6 @@ def get_local_buffer_sample_lidar(prev_act, obs, rew, terminated, truncated, inf
     return prev_act, obs_mod, rew_mod, terminated_mod, truncated_mod, info
 
 
-def get_local_buffer_sample_lidar_track_map(prev_act, obs, rew, terminated, truncated, info):
-    """
-    Input:
-        prev_act: action computed from a previous observation and applied to yield obs in the transition (but not influencing the unaugmented observation in real-time envs)
-        obs, rew, terminated, truncated, info: outcome of the transition
-    this function creates the object that will actually be stored in local buffers for networking
-    this is to compress the sample before sending it over the Internet/local network
-    buffers of such samples will be given as input to the append() method of the dataloading memory
-    the user must define both this function and the append() method of the dataloading memory
-    CAUTION: prev_act is the action that comes BEFORE obs (i.e. prev_obs, prev_act(prev_obs), obs(prev_act))
-    """
-    obs_mod = (obs[0], obs[1][-19:],obs[2])  # speed and most recent LIDAR only and track_map
-    rew_mod = np.float32(rew)
-    terminated_mod = terminated
-    truncated_mod = truncated
-    return prev_act, obs_mod, rew_mod, terminated_mod, truncated_mod, info
-
-def get_local_buffer_sample_new_track_map(prev_act, obs, rew, terminated, truncated, info):
-    """
-    Input:
-        prev_act: action computed from a previous observation and applied to yield obs in the transition (but not influencing the unaugmented observation in real-time envs)
-        obs, rew, terminated, truncated, info: outcome of the transition
-    this function creates the object that will actually be stored in local buffers for networking
-    this is to compress the sample before sending it over the Internet/local network
-    buffers of such samples will be given as input to the append() method of the dataloading memory
-    the user must define both this function and the append() method of the dataloading memory
-    CAUTION: prev_act is the action that comes BEFORE obs (i.e. prev_obs, prev_act(prev_obs), obs(prev_act))
-    """
-    obs_mod = (obs[0], obs[1], obs[2], obs[3])  # speed and most recent LIDAR only and track_map
-    rew_mod = np.float32(rew)
-    terminated_mod = terminated
-    truncated_mod = truncated
-    return prev_act, obs_mod, rew_mod, terminated_mod, truncated_mod, info
-
 def get_local_buffer_sample_lidar_progress(prev_act, obs, rew, terminated, truncated, info):
     """
     Input:
@@ -97,6 +63,42 @@ def get_local_buffer_sample_tm20_imgs(prev_act, obs, rew, terminated, truncated,
     truncated_mod = truncated
     info_mod = info
     return prev_act_mod, obs_mod, rew_mod, terminated_mod, truncated_mod, info_mod
+
+
+def get_local_buffer_sample_lidar_track_map(prev_act, obs, rew, terminated, truncated, info):
+    """
+    Input:
+        prev_act: action computed from a previous observation and applied to yield obs in the transition (but not influencing the unaugmented observation in real-time envs)
+        obs, rew, terminated, truncated, info: outcome of the transition
+    this function creates the object that will actually be stored in local buffers for networking
+    this is to compress the sample before sending it over the Internet/local network
+    buffers of such samples will be given as input to the append() method of the dataloading memory
+    the user must define both this function and the append() method of the dataloading memory
+    CAUTION: prev_act is the action that comes BEFORE obs (i.e. prev_obs, prev_act(prev_obs), obs(prev_act))
+    """
+    obs_mod = (obs[0], obs[1][-19:],obs[2])  # speed and most recent LIDAR only and track_map
+    rew_mod = np.float32(rew)
+    terminated_mod = terminated
+    truncated_mod = truncated
+    return prev_act, obs_mod, rew_mod, terminated_mod, truncated_mod, info
+
+
+def get_local_buffer_sample_new_track_map(prev_act, obs, rew, terminated, truncated, info):
+    """
+    Input:
+        prev_act: action computed from a previous observation and applied to yield obs in the transition (but not influencing the unaugmented observation in real-time envs)
+        obs, rew, terminated, truncated, info: outcome of the transition
+    this function creates the object that will actually be stored in local buffers for networking
+    this is to compress the sample before sending it over the Internet/local network
+    buffers of such samples will be given as input to the append() method of the dataloading memory
+    the user must define both this function and the append() method of the dataloading memory
+    CAUTION: prev_act is the action that comes BEFORE obs (i.e. prev_obs, prev_act(prev_obs), obs(prev_act))
+    """
+    obs_mod = (obs[0], obs[1], obs[2], obs[3], obs[4], obs[5], obs[6], obs[7])  # speed, gear, rpm, track_information,acceleration,steering_angle,slipping_tires,crash
+    rew_mod = np.float32(rew)
+    terminated_mod = terminated
+    truncated_mod = truncated
+    return prev_act, obs_mod, rew_mod, terminated_mod, truncated_mod, info
 
 
 # FUNCTIONS ====================================================
@@ -650,10 +652,10 @@ class MemoryTMNewTrackMap(MemoryTM):
         # imgs_new_obs = np.ndarray.flatten(imgs_new_obs)
         # imgs_last_obs = np.ndarray.flatten(imgs_last_obs)
 
-        last_obs = (self.data[2][idx_last], self.data[3][idx_last], self.data[4][idx_last],self.data[10][idx_last], *last_act_buf)
+        last_obs = (self.data[2][idx_last], self.data[3][idx_last], self.data[4][idx_last],self.data[10][idx_last],self.data[11][idx_last],self.data[12][idx_last],self.data[13][idx_last],self.data[14][idx_last], *last_act_buf)
         new_act = self.data[1][idx_now]
         rew = np.float32(self.data[6][idx_now])
-        new_obs = (self.data[2][idx_now],self.data[3][idx_now], self.data[4][idx_now],self.data[10][idx_now], *new_act_buf)
+        new_obs = (self.data[2][idx_now],self.data[3][idx_now], self.data[4][idx_now],self.data[10][idx_now],self.data[11][idx_now],self.data[12][idx_now],self.data[13][idx_now],self.data[14][idx_now], *new_act_buf)
         terminated = self.data[8][idx_now]
         truncated = self.data[9][idx_now]
         info = self.data[7][idx_now]
@@ -683,6 +685,10 @@ class MemoryTMNewTrackMap(MemoryTM):
         d8 = [b[3] for b in buffer.memory]  # terminated
         d9 = [b[4] for b in buffer.memory]  # truncated
         d10 = [b[1][3] for b in buffer.memory]  # track in front
+        d11 = [b[1][4] for b in buffer.memory]  # acceleration
+        d12 = [b[1][5] for b in buffer.memory]  # steering_angle
+        d13 = [b[1][6] for b in buffer.memory]  # slipping_tires
+        d14 = [b[1][7] for b in buffer.memory]  # crash
 
         if self.__len__() > 0:
             self.data[0] += d0
@@ -696,6 +702,10 @@ class MemoryTMNewTrackMap(MemoryTM):
             self.data[8] += d8
             self.data[9] += d9
             self.data[10] += d10
+            self.data[10] += d11
+            self.data[10] += d12
+            self.data[10] += d13
+            self.data[10] += d14
         else:
             self.data.append(d0)
             self.data.append(d1)
@@ -708,6 +718,10 @@ class MemoryTMNewTrackMap(MemoryTM):
             self.data.append(d8)
             self.data.append(d9)
             self.data.append(d10)
+            self.data.append(d11)
+            self.data.append(d12)
+            self.data.append(d13)
+            self.data.append(d14)
 
         to_trim = self.__len__() - self.memory_size
         if to_trim > 0:
@@ -722,6 +736,10 @@ class MemoryTMNewTrackMap(MemoryTM):
             self.data[8] = self.data[8][to_trim:]
             self.data[9] = self.data[9][to_trim:]
             self.data[10] = self.data[10][to_trim:]
+            self.data[11] = self.data[11][to_trim:]
+            self.data[12] = self.data[12][to_trim:]
+            self.data[13] = self.data[13][to_trim:]
+            self.data[14] = self.data[14][to_trim:]
 
         return self
 
