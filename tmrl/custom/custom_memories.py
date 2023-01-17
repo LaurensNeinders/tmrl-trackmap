@@ -702,10 +702,10 @@ class MemoryTMNewTrackMap(MemoryTM):
             self.data[8] += d8
             self.data[9] += d9
             self.data[10] += d10
-            self.data[10] += d11
-            self.data[10] += d12
-            self.data[10] += d13
-            self.data[10] += d14
+            self.data[11] += d11
+            self.data[12] += d12
+            self.data[13] += d13
+            self.data[14] += d14
         else:
             self.data.append(d0)
             self.data.append(d1)

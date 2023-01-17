@@ -38,8 +38,8 @@ coordinates_right_z = []
 colormap = []
 last_position = 0
 
-map_left = np.loadtxt('saved_tracks/sm_track/track_left_smooth_small.csv', delimiter=',')
-map_right = np.loadtxt('saved_tracks/sm_track/track_right_smooth_small.csv', delimiter=',')
+map_left = np.loadtxt('saved_tracks/tmrl-test/track_left_smooth_small.csv', delimiter=',')
+map_right = np.loadtxt('saved_tracks/tmrl-test/track_right_smooth_small.csv', delimiter=',')
 all_observed_track_parts = [[],[],[],[],[]]
 
 # Interface for Trackmania 2020 ========================================================================================
@@ -547,7 +547,7 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
 
         # retrieving map information --------------------------------------
         # Cut out a portion directly in front of the car, as input for the ai
-        look_ahead_distance = 20 # points to look ahead on the track
+        look_ahead_distance = 15 # points to look ahead on the track
         nearby_correction = 60 # one point on a side needs to be at least this close to the same point on the other side
         l_x, l_z, r_x, r_z = self.get_track_in_front(car_position, look_ahead_distance, nearby_correction)
 
@@ -781,7 +781,7 @@ class TM2020InterfaceNewTrackMap(TM2020InterfaceLidar):
         speed = spaces.Box(low=0.0, high=1000.0, shape=(1, ))
         gear = spaces.Box(low=0.0, high=6, shape=(1, ))
         rpm = spaces.Box(low=0.0, high=np.inf, shape=(1, ))
-        track_information = spaces.Box(low=-300,high=300, shape=(80,))
+        track_information = spaces.Box(low=-300,high=300, shape=(60,))
         acceleration = spaces.Box(low=-100, high=100.0, shape=(1, ))
         steering_angle = spaces.Box(low=-1, high=1.0, shape=(1, ))
         slipping_tires = spaces.Box(low=0.0, high=1, shape=(4,))
@@ -816,7 +816,7 @@ class TM2020InterfaceNewTrackMap(TM2020InterfaceLidar):
         self.last_pos = car_position
         # retrieving map information --------------------------------------
         # Cut out a portion directly in front of the car, as input for the ai
-        look_ahead_distance = 20 # points to look ahead on the track
+        look_ahead_distance = 15 # points to look ahead on the track
         nearby_correction = 60 # one point on a side needs to be at least this close to the same point on the other side
         l_x, l_z, r_x, r_z = self.get_track_in_front(car_position, look_ahead_distance, nearby_correction)
 
@@ -826,10 +826,10 @@ class TM2020InterfaceNewTrackMap(TM2020InterfaceLidar):
         l_x, l_z, r_x, r_z = self.normalize_track(l_x, l_z, r_x, r_z,car_position,yaw)
 
         # save the track in front in a file, so we can play it back later
-        # all_observed_track_parts[0].append(l_x.tolist())
-        # all_observed_track_parts[1].append(l_z.tolist())
-        # all_observed_track_parts[2].append(r_x.tolist())
-        # all_observed_track_parts[3].append(r_z.tolist())
+        all_observed_track_parts[0].append(l_x.tolist())
+        all_observed_track_parts[1].append(l_z.tolist())
+        all_observed_track_parts[2].append(r_x.tolist())
+        all_observed_track_parts[3].append(r_z.tolist())
         # all_observed_track_parts[4].append(car_position)
         # ----------------------------------------------------------------------
 
@@ -858,10 +858,10 @@ class TM2020InterfaceNewTrackMap(TM2020InterfaceLidar):
         obs = [speed, gear, rpm, track_information,acceleration,steering_angle,slipping_tires,crash]
         end_of_track = bool(data[8])
         info = {}
-        crash_penalty = -5
+        crash_penalty = 0 # < 0 to give a penalty
         if crash == 1:
             rew += crash_penalty
-            print("crash penalty was given")
+            print("crash penalty was not given")
         if end_of_track:
             rew += self.finish_reward
             terminated = True
@@ -944,7 +944,7 @@ class TM2020InterfaceNewTrackMap(TM2020InterfaceLidar):
         """
         self.reset_common()
         data = self.grab_data()
-        track_information = np.full((80,), 0,dtype='float32')
+        track_information = np.full((60,), 0,dtype='float32')
         speed = np.array([
             data[0],
         ], dtype='float32')
