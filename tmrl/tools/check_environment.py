@@ -28,7 +28,7 @@ def check_env_tm20lidar():
     # env_config["start_obs_capture"] = 0.4
     env = gym.make("real-time-gym-v0", config=env_config)
     o, i = env.reset()
-    rounds = 400
+    rounds = 1000
     current=0
     while current < rounds:
         current+=1

@@ -2,10 +2,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.interpolate import splprep, splev
 
-l_x,l_z = np.loadtxt('../saved_tracks/sm_track/track_left.csv', delimiter=',')
-r_x,r_z = np.loadtxt('../saved_tracks/sm_track/track_right.csv', delimiter=',')
+l_x,l_z = np.loadtxt('../saved_tracks/tmrl-test/track_left.csv', delimiter=',')
+r_x,r_z = np.loadtxt('../saved_tracks/tmrl-test/track_right.csv', delimiter=',')
 
-total_points = 100 # points per side of the road in total
+total_points = 1000 # points per side of the road in total
 plt.scatter(l_x.tolist()+r_x.tolist(),l_z.tolist()+r_z.tolist())
 plt.show()
 # calculate a curve through the left-sided points
@@ -26,8 +26,8 @@ u_new = np.linspace(u.min(), u.max(), total_points)
 x_new2, y_new2 = splev(u_new, tck, der=0)
 print(u.min(), u.max())
 
-np.savetxt('../saved_tracks/sm_track/track_left_smooth_small.csv', [x_new,y_new], delimiter=',')
-np.savetxt('../saved_tracks/sm_track/track_right_smooth_small.csv', [x_new2,y_new2], delimiter=',')
+# np.savetxt('../saved_tracks/sm_track/track_left_smooth_small.csv', [x_new,y_new], delimiter=',')
+# np.savetxt('../saved_tracks/sm_track/track_right_smooth_small.csv', [x_new2,y_new2], delimiter=',')
 
 
 x_new = x_new.tolist()
@@ -36,14 +36,14 @@ x_new2 = x_new2.tolist()
 y_new2 = y_new2.tolist()
 
 
-plt.plot(r_x, r_z, 'ro')
-plt.plot(x_new2, y_new2, 'b--')
-plt.plot(l_x, l_z, 'ro')
-plt.plot(x_new, y_new, 'b--')
+# plt.plot(r_x, r_z, 'ro')
+plt.plot(x_new2, y_new2, 'ro')
+# plt.plot(l_x, l_z, 'ro')
+plt.plot(x_new, y_new, 'ro')
 plt.show()
 
-plt.plot(x_new2[:100] + x_new[:100], y_new2[:100] + y_new[:100], 'ro')
-plt.show()
+# plt.plot(x_new2[:100] + x_new[:100], y_new2[:100] + y_new[:100], 'ro')
+# plt.show()
 
 
 
