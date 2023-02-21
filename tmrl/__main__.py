@@ -13,7 +13,7 @@ from tmrl.networking import Server, Trainer, RolloutWorker
 from tmrl.util import partial
 
 # Custom imports
-from tmrl.custom.custom_gym_interfaces import get_coordinates, get_all_observed_track_parts
+from tmrl.custom.custom_gym_interfaces import get_all_observed_track_parts
 from matplotlib import pyplot as plt
 import numpy as np
 

@@ -12,7 +12,7 @@ import tmrl.config.config_constants as cfg
 import logging
 
 # Custom imports
-from tmrl.custom.custom_gym_interfaces import get_coordinates, get_all_observed_track_parts
+from tmrl.custom.custom_gym_interfaces import get_all_observed_track_parts
 from matplotlib import pyplot as plt
 from time import sleep
 from scipy.interpolate import splprep, splev
