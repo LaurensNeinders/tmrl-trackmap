@@ -20,11 +20,11 @@ def benchmark():
     action_space = spaces.Box(low=-1.0, high=1.0, shape=(3, ))
 
     env_config = DEFAULT_CONFIG_DICT.copy()
-    env_config["interface"] = TM2020InterfaceLidarTrackMap
+    env_config["interface"] = TM2020InterfaceLidar
     env_config["benchmark"] = True
     env_config["running_average_factor"] = 0.05
     env_config["wait_on_done"] = True
-    env_config["interface_kwargs"] = {"img_hist_len": 1, "gamepad": False, "min_nb_steps_before_failure": int(20 * 60), "record": False}
+    env_config["interface_kwargs"] = {"img_hist_len": 1, "gamepad": False, "min_nb_steps_before_failure": int(20 * 60)}
     env = gym.make("real-time-gym-v0", config=env_config)
 
     t_d = time.time()

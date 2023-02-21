@@ -51,11 +51,11 @@ class TM2020OpenPlanetClient:
                 self.__data = data_used
                 self.__lock.release()
 
-    def retrieve_data(self, sleep_if_empty=0.1, timeout=10.0):
+    def retrieve_data(self, sleep_if_empty=0.01, timeout=10.0):
         """
         Retrieves the most recently received data
         Use this function to retrieve the most recently received data
-        If block if nothing has been received so far
+        This blocks if nothing has been received so far
         """
         c = True
         t_start = None
@@ -76,11 +76,11 @@ class TM2020OpenPlanetClient:
 
 
 def armin(tab):
-    nz = np.nonzero(tab)[0] # find the indices of the pixels that are black
-    if len(nz) != 0: # if a black pixel is found,
-        return nz[0].item() # return the position (index) of the first pixel
+    nz = np.nonzero(tab)[0]
+    if len(nz) != 0:
+        return nz[0].item()
     else:
-        return len(tab) - 1 # return the amount of pixels that the line is m
+        return len(tab) - 1
 
 
 class Lidar:
@@ -89,16 +89,14 @@ class Lidar:
         self.black_threshold = LIDAR_BLACK_THRESHOLD
 
     def _set_axis_lidar(self, im):
-        # create two arrays for every line, one with y and one with x coordinates of each point on the line
         h, w, _ = im.shape
         self.h = h
         self.w = w
-        self.road_point = (44*h//49, w//2) #starting point
-        min_dist = 10 # pixels extra from start
+        self.road_point = (44*h//49, w//2)
+        min_dist = 20
         list_ax_x = []
         list_ax_y = []
-        for angle in range(90, 280, 10): #90, 280, 10
-
+        for angle in range(90, 280, 10):
             axis_x = []
             axis_y = []
             x = self.road_point[0]
@@ -131,10 +129,7 @@ class Lidar:
             thickness = 4
             img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
         for axis_x, axis_y in zip(self.list_axis_x, self.list_axis_y):
-            # np.all(...) function return an array with for every pixels if it is black or not.
-            # armin(...) returns length of the line until black pixel is hit.
             index = armin(np.all(img[axis_x, axis_y] < self.black_threshold, axis=1))
-
             if show:
                 img = cv2.line(img, (self.road_point[1], self.road_point[0]), (axis_y[index], axis_x[index]), color, thickness)
             index = np.float32(index)
@@ -143,7 +138,6 @@ class Lidar:
         if show:
             cv2.imshow("Environment", img)
             cv2.waitKey(1)
-
         return res
 
 

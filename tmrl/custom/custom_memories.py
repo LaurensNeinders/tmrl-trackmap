@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 
 # local imports
-from tmrl.memory_dataloading import MemoryDataloading
+from tmrl.memory import TorchMemory
 
 # LOCAL BUFFER COMPRESSION ==============================
 
@@ -15,8 +15,8 @@ def get_local_buffer_sample_lidar(prev_act, obs, rew, terminated, truncated, inf
         obs, rew, terminated, truncated, info: outcome of the transition
     this function creates the object that will actually be stored in local buffers for networking
     this is to compress the sample before sending it over the Internet/local network
-    buffers of such samples will be given as input to the append() method of the dataloading memory
-    the user must define both this function and the append() method of the dataloading memory
+    buffers of such samples will be given as input to the append() method of the memory
+    the user must define both this function and the append() method of the memory
     CAUTION: prev_act is the action that comes BEFORE obs (i.e. prev_obs, prev_act(prev_obs), obs(prev_act))
     """
     obs_mod = (obs[0], obs[1][-19:])  # speed and most recent LIDAR only
@@ -33,8 +33,8 @@ def get_local_buffer_sample_lidar_progress(prev_act, obs, rew, terminated, trunc
         obs, rew, terminated, truncated, info: outcome of the transition
     this function creates the object that will actually be stored in local buffers for networking
     this is to compress the sample before sending it over the Internet/local network
-    buffers of such samples will be given as input to the append() method of the dataloading memory
-    the user must define both this function and the append() method of the dataloading memory
+    buffers of such samples will be given as input to the append() method of the memory
+    the user must define both this function and the append() method of the memory
     CAUTION: prev_act is the action that comes BEFORE obs (i.e. prev_obs, prev_act(prev_obs), obs(prev_act))
     """
     obs_mod = (obs[0], obs[1], obs[2][-19:])  # speed and most recent LIDAR only
@@ -52,8 +52,8 @@ def get_local_buffer_sample_tm20_imgs(prev_act, obs, rew, terminated, truncated,
         obs, rew, terminated, truncated, info: outcome of the transition
     this function creates the object that will actually be stored in local buffers for networking
     this is to compress the sample before sending it over the Internet/local network
-    buffers of such samples will be given as input to the append() method of the dataloading memory
-    the user must define both this function and the append() method of the dataloading memory
+    buffers of such samples will be given as input to the append() method of the memory
+    the user must define both this function and the append() method of the memory
     CAUTION: prev_act is the action that comes BEFORE obs (i.e. prev_obs, prev_act(prev_obs), obs(prev_act))
     """
     prev_act_mod = prev_act
@@ -63,42 +63,6 @@ def get_local_buffer_sample_tm20_imgs(prev_act, obs, rew, terminated, truncated,
     truncated_mod = truncated
     info_mod = info
     return prev_act_mod, obs_mod, rew_mod, terminated_mod, truncated_mod, info_mod
-
-
-def get_local_buffer_sample_lidar_track_map(prev_act, obs, rew, terminated, truncated, info):
-    """
-    Input:
-        prev_act: action computed from a previous observation and applied to yield obs in the transition (but not influencing the unaugmented observation in real-time envs)
-        obs, rew, terminated, truncated, info: outcome of the transition
-    this function creates the object that will actually be stored in local buffers for networking
-    this is to compress the sample before sending it over the Internet/local network
-    buffers of such samples will be given as input to the append() method of the dataloading memory
-    the user must define both this function and the append() method of the dataloading memory
-    CAUTION: prev_act is the action that comes BEFORE obs (i.e. prev_obs, prev_act(prev_obs), obs(prev_act))
-    """
-    obs_mod = (obs[0], obs[1][-19:],obs[2])  # speed and most recent LIDAR only and track_map
-    rew_mod = np.float32(rew)
-    terminated_mod = terminated
-    truncated_mod = truncated
-    return prev_act, obs_mod, rew_mod, terminated_mod, truncated_mod, info
-
-
-def get_local_buffer_sample_new_track_map(prev_act, obs, rew, terminated, truncated, info):
-    """
-    Input:
-        prev_act: action computed from a previous observation and applied to yield obs in the transition (but not influencing the unaugmented observation in real-time envs)
-        obs, rew, terminated, truncated, info: outcome of the transition
-    this function creates the object that will actually be stored in local buffers for networking
-    this is to compress the sample before sending it over the Internet/local network
-    buffers of such samples will be given as input to the append() method of the dataloading memory
-    the user must define both this function and the append() method of the dataloading memory
-    CAUTION: prev_act is the action that comes BEFORE obs (i.e. prev_obs, prev_act(prev_obs), obs(prev_act))
-    """
-    obs_mod = (obs[0], obs[1], obs[2], obs[3], obs[4], obs[5], obs[6], obs[7])  # speed, gear, rpm, track_information,acceleration,steering_angle,slipping_tires,crash
-    rew_mod = np.float32(rew)
-    terminated_mod = terminated
-    truncated_mod = truncated
-    return prev_act, obs_mod, rew_mod, terminated_mod, truncated_mod, info
 
 
 # FUNCTIONS ====================================================
@@ -128,7 +92,7 @@ def replace_hist_before_eoe(hist, eoe_idx_in_hist):
 # SUPPORTED CUSTOM MEMORIES ============================================================================================
 
 
-class MemoryTM(MemoryDataloading):
+class MemoryTM(TorchMemory):
     def __init__(self,
                  memory_size=None,
                  batch_size=None,
@@ -136,9 +100,6 @@ class MemoryTM(MemoryDataloading):
                  imgs_obs=4,
                  act_buf_len=1,
                  nb_steps=1,
-                 use_dataloader=False,
-                 num_workers=0,
-                 pin_memory=False,
                  sample_preprocessor: callable = None,
                  crc_debug=False,
                  device="cpu"):
@@ -151,9 +112,6 @@ class MemoryTM(MemoryDataloading):
                          batch_size=batch_size,
                          dataset_path=dataset_path,
                          nb_steps=nb_steps,
-                         use_dataloader=use_dataloader,
-                         num_workers=num_workers,
-                         pin_memory=pin_memory,
                          sample_preprocessor=sample_preprocessor,
                          crc_debug=crc_debug,
                          device=device)
@@ -277,7 +235,6 @@ class MemoryTMLidar(MemoryTM):
             self.data[6] = self.data[6][to_trim:]
             self.data[7] = self.data[7][to_trim:]
             self.data[8] = self.data[8][to_trim:]
-        print("wtf.............................................................................................................................................................")
 
         return self
 

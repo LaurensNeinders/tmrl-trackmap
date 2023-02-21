@@ -7,7 +7,7 @@ import json
 import tmrl.config.config_constants as cfg
 import tmrl.config.config_objects as cfg_obj
 from tmrl.tools.record import record_reward_dist
-from tmrl.tools.check_environment import check_env_tm20lidar
+from tmrl.tools.check_environment import check_env_tm20lidar, check_env_tm20full
 from tmrl.envs import GenericGymEnv
 from tmrl.networking import Server, Trainer, RolloutWorker
 from tmrl.util import partial
@@ -17,10 +17,9 @@ from tmrl.custom.custom_gym_interfaces import get_coordinates, get_all_observed_
 from matplotlib import pyplot as plt
 import numpy as np
 
-
 def main(args):
     if args.server:
-        Server(min_samples_per_server_packet=1000 if not cfg.CRC_DEBUG else cfg.CRC_DEBUG_SAMPLES)
+        serv = Server()
         while True:
             time.sleep(1.0)
     elif args.worker or args.test or args.benchmark:
@@ -31,9 +30,8 @@ def main(args):
         rw = RolloutWorker(env_cls=partial(GenericGymEnv, id="real-time-gym-v0", gym_kwargs={"config": config}),
                            actor_module_cls=cfg_obj.POLICY,
                            sample_compressor=cfg_obj.SAMPLE_COMPRESSOR,
-                           device='cuda' if cfg.PRAGMA_CUDA_INFERENCE else 'cpu',
+                           device='cuda' if cfg.CUDA_INFERENCE else 'cpu',
                            server_ip=cfg.SERVER_IP_FOR_WORKER,
-                           min_samples_per_worker_packet=1000 if not cfg.CRC_DEBUG else cfg.CRC_DEBUG_SAMPLES,
                            max_samples_per_episode=cfg.RW_MAX_SAMPLES_PER_EPISODE,
                            model_path=cfg.MODEL_PATH_WORKER,
                            obs_preprocessor=cfg_obj.OBS_PREPROCESSOR,
@@ -74,8 +72,10 @@ def main(args):
     elif args.record_reward:
         record_reward_dist(path_reward=cfg.REWARD_PATH)
     elif args.check_env:
-        assert cfg.PRAGMA_LIDAR, "Not supported for this environment."
-        check_env_tm20lidar()
+        if cfg.PRAGMA_LIDAR:
+            check_env_tm20lidar()
+        else:
+            check_env_tm20full()
     else:
         raise ArgumentTypeError('Enter a valid argument')
 

@@ -6,12 +6,12 @@ import rtgym
 
 # local imports
 import tmrl.config.config_constants as cfg
-from tmrl.training_offline import TrainingOffline
+from tmrl.training_offline import TorchTrainingOffline
 from tmrl.custom.custom_gym_interfaces import TM2020Interface, TM2020InterfaceLidar, TM2020InterfaceLidarProgress, TM2020InterfaceLidarTrackMap,TM2020InterfaceNewTrackMap
 from tmrl.custom.custom_memories import MemoryTMFull, MemoryTMLidar, MemoryTMLidarProgress, MemoryTMLidarTrackMap,MemoryTMNewTrackMap, get_local_buffer_sample_lidar, get_local_buffer_sample_lidar_progress, get_local_buffer_sample_tm20_imgs, get_local_buffer_sample_lidar_track_map,get_local_buffer_sample_new_track_map
 from tmrl.custom.custom_preprocessors import obs_preprocessor_tm_act_in_obs, obs_preprocessor_tm_lidar_act_in_obs,obs_preprocessor_tm_lidar_progress_act_in_obs,obs_preprocessor_tm_lidar_track_map_act_in_obs,obs_preprocessor_tm_new_track_map_act_in_obs
 from tmrl.envs import GenericGymEnv
-from tmrl.custom.custom_models import SquashedGaussianMLPActor, MLPActorCritic, REDQMLPActorCritic, RNNActorCritic, SquashedGaussianRNNActor, SquashedGaussianVanillaCNNActor, VanillaCNNActorCritic
+from tmrl.custom.custom_models import SquashedGaussianMLPActor, MLPActorCritic, REDQMLPActorCritic, RNNActorCritic, SquashedGaussianRNNActor, SquashedGaussianVanillaCNNActor, VanillaCNNActorCritic, SquashedGaussianVanillaColorCNNActor, VanillaColorCNNActorCritic
 from tmrl.custom.custom_algorithms import SpinupSacAgent as SAC_Agent
 from tmrl.custom.custom_algorithms import REDQSACAgent as REDQ_Agent
 from tmrl.custom.custom_checkpoints import update_run_instance
@@ -25,7 +25,7 @@ assert ALG_NAME in ["SAC", "REDQSAC"], f"If you wish to implement {ALG_NAME}, do
 
 # MODEL, GYM ENVIRONMENT, REPLAY MEMORY AND TRAINING: ===========
 
-if cfg.PRAGMA_LIDAR :
+if cfg.PRAGMA_LIDAR:
     if cfg.PRAGMA_RNN:
         assert ALG_NAME == "SAC", f"{ALG_NAME} is not implemented here."
         TRAIN_MODEL = RNNActorCritic
@@ -36,8 +36,8 @@ if cfg.PRAGMA_LIDAR :
 else:
     assert not cfg.PRAGMA_RNN, "RNNs not supported yet"
     assert ALG_NAME == "SAC", f"{ALG_NAME} is not implemented here."
-    TRAIN_MODEL = VanillaCNNActorCritic
-    POLICY = SquashedGaussianVanillaCNNActor
+    TRAIN_MODEL = VanillaCNNActorCritic if cfg.GRAYSCALE else VanillaColorCNNActorCritic
+    POLICY = SquashedGaussianVanillaCNNActor if cfg.GRAYSCALE else SquashedGaussianVanillaColorCNNActor
 
 if cfg.PRAGMA_LIDAR:
     if cfg.PRAGMA_PROGRESS:
@@ -50,7 +50,11 @@ if cfg.PRAGMA_LIDAR:
         INT = partial(TM2020InterfaceLidar, img_hist_len=cfg.IMG_HIST_LEN, gamepad=cfg.PRAGMA_GAMEPAD)
 
 else:
-    INT = partial(TM2020Interface, img_hist_len=cfg.IMG_HIST_LEN, gamepad=cfg.PRAGMA_GAMEPAD)
+    INT = partial(TM2020Interface,
+                  img_hist_len=cfg.IMG_HIST_LEN,
+                  gamepad=cfg.PRAGMA_GAMEPAD,
+                  grayscale=cfg.GRAYSCALE,
+                  resize_to=(cfg.IMG_WIDTH, cfg.IMG_HEIGHT))
 
 CONFIG_DICT = rtgym.DEFAULT_CONFIG_DICT.copy()
 CONFIG_DICT["interface"] = INT
@@ -109,16 +113,14 @@ MEMORY = partial(MEM,
                  dataset_path=cfg.DATASET_PATH,
                  imgs_obs=cfg.IMG_HIST_LEN,
                  act_buf_len=cfg.ACT_BUF_LEN,
-                 crc_debug=cfg.CRC_DEBUG,
-                 use_dataloader=False,
-                 pin_memory=False)
+                 crc_debug=cfg.CRC_DEBUG)
 
 # ALGORITHM: ===================================================
 
 if ALG_NAME == "SAC":
     AGENT = partial(
         SAC_Agent,
-        device='cuda' if cfg.PRAGMA_CUDA_TRAINING else 'cpu',
+        device='cuda' if cfg.CUDA_TRAINING else 'cpu',
         model_cls=TRAIN_MODEL,
         lr_actor=ALG_CONFIG["LR_ACTOR"],
         lr_critic=ALG_CONFIG["LR_CRITIC"],
@@ -132,7 +134,7 @@ if ALG_NAME == "SAC":
 else:
     AGENT = partial(
         REDQ_Agent,
-        device='cuda' if cfg.PRAGMA_CUDA_TRAINING else 'cpu',
+        device='cuda' if cfg.CUDA_TRAINING else 'cpu',
         model_cls=TRAIN_MODEL,
         lr_actor=ALG_CONFIG["LR_ACTOR"],
         lr_critic=ALG_CONFIG["LR_CRITIC"],
@@ -162,7 +164,7 @@ ENV_CLS = partial(GenericGymEnv, id="real-time-gym-v0", gym_kwargs={"config": CO
 
 if cfg.PRAGMA_LIDAR:  # lidar
     TRAINER = partial(
-        TrainingOffline,
+        TorchTrainingOffline,
         env_cls=ENV_CLS,
         memory_cls=MEMORY,
         epochs=cfg.TMRL_CONFIG["MAX_EPOCHS"],
@@ -177,7 +179,7 @@ if cfg.PRAGMA_LIDAR:  # lidar
         start_training=cfg.TMRL_CONFIG["ENVIRONMENT_STEPS_BEFORE_TRAINING"])  # set this > 0 to start from an existing policy (fills the buffer up to this number of samples before starting training)
 else:  # images
     TRAINER = partial(
-        TrainingOffline,
+        TorchTrainingOffline,
         env_cls=ENV_CLS,
         memory_cls=MEMORY,
         epochs=cfg.TMRL_CONFIG["MAX_EPOCHS"],
