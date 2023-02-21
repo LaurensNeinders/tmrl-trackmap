@@ -13,8 +13,9 @@ from tmrl.networking import Server, Trainer, RolloutWorker
 from tmrl.util import partial
 
 # Custom imports
-from tmrl.custom.custom_gym_interfaces import get_coordinates
+from tmrl.custom.custom_gym_interfaces import get_coordinates, get_all_observed_track_parts
 from matplotlib import pyplot as plt
+import numpy as np
 
 
 def main(args):
@@ -43,12 +44,17 @@ def main(args):
         elif args.benchmark:
             rw.run_env_benchmark(nb_steps=1000, test=False)
         else:
-            rw.run_episodes(1500,5)
+            rw.run_episodes(100,1)
+            print(get_all_observed_track_parts())
+            np.savetxt('saved_tracks/tmrl-test/observed_run/observed_track_car_pos_human.csv', np.array(get_all_observed_track_parts()[4],dtype=object), delimiter=',')
 
-            l_x,l_z,r_x,r_z,color = get_coordinates()
-            x = l_x.tolist() + r_x.tolist()
-            z = l_z.tolist() + r_z.tolist()
-            plt.scatter(x,z)
+            l_x,l_z = np.loadtxt('saved_tracks/tmrl-test/track_left_smooth.csv', delimiter=',')
+            r_x,r_z = np.loadtxt('saved_tracks/tmrl-test/track_right_smooth.csv', delimiter=',')
+            pos = np.loadtxt('saved_tracks/tmrl-test/observed_run/observed_track_car_pos_human.csv',delimiter=',')
+
+            plt.plot(r_x, r_z, 'ro')
+            plt.plot(l_x, l_z, 'ro')
+            plt.plot(pos.T[0], pos.T[1],'bo')
             plt.show()
     elif args.trainer:
         trainer = Trainer(training_cls=cfg_obj.TRAINER,

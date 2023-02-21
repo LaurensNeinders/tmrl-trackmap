@@ -394,6 +394,8 @@ class TM2020InterfaceLidar(TM2020Interface):
         obs must be a list of numpy arrays
         """
         img, speed, data = self.grab_lidar_speed_and_data() # img is lidar
+        car_position = [data[2],data[4]]
+        all_observed_track_parts[4].append(car_position)
         rew, terminated = self.reward_function.compute_reward(pos=np.array([data[2], data[3], data[4]])) # data[2-4] are the position, from that the reward is computed
         self.img_hist.append(img)
         imgs = np.array(list(self.img_hist), dtype='float32')
@@ -555,7 +557,7 @@ class TM2020InterfaceLidarTrackMap(TM2020InterfaceLidar):
         #normalize the track in front
 
         l_x, l_z, r_x, r_z = self.normalize_track(l_x, l_z, r_x, r_z,car_position,yaw)
-
+        print("hELLLLLLLLOOOo")
         # save the track in front in a file, so we can play it back later
         all_observed_track_parts[0].append(l_x.tolist())
         all_observed_track_parts[1].append(l_z.tolist())
@@ -824,13 +826,13 @@ class TM2020InterfaceNewTrackMap(TM2020InterfaceLidar):
         #normalize the track in front
 
         l_x, l_z, r_x, r_z = self.normalize_track(l_x, l_z, r_x, r_z,car_position,yaw)
-
+        print("hELLLLLLLLOOOo")
         # save the track in front in a file, so we can play it back later
         all_observed_track_parts[0].append(l_x.tolist())
         all_observed_track_parts[1].append(l_z.tolist())
         all_observed_track_parts[2].append(r_x.tolist())
         all_observed_track_parts[3].append(r_z.tolist())
-        # all_observed_track_parts[4].append(car_position)
+        all_observed_track_parts[4].append(car_position)
         # ----------------------------------------------------------------------
 
 
