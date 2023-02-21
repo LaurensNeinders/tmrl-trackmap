@@ -31,22 +31,12 @@ NB_OBS_FORWARD = 500  # this allows (and rewards) 50m cuts
 
 # Custom variables
 
-coordinates_left_x = []
-coordinates_left_z = []
-coordinates_right_x = []
-coordinates_right_z = []
-colormap = []
-last_position = 0
-
-map_left = np.loadtxt('saved_tracks/tmrl-test/track_left_smooth_small.csv', delimiter=',')
-map_right = np.loadtxt('saved_tracks/tmrl-test/track_right_smooth_small.csv', delimiter=',')
+map_left = np.loadtxt('saved_tracks/tmrl-test/track_left.csv', delimiter=',')
+map_right = np.loadtxt('saved_tracks/tmrl-test/track_right.csv', delimiter=',')
 all_observed_track_parts = [[],[],[],[],[]]
 
 # Interface for Trackmania 2020 ========================================================================================
 
-
-def get_coordinates():
-    return np.array(coordinates_left_x), np.array(coordinates_left_z), np.array(coordinates_right_x), np.array(coordinates_right_z), colormap
 
 def get_all_observed_track_parts():
     return all_observed_track_parts
@@ -421,12 +411,6 @@ class TM2020InterfaceTrackMap(TM2020InterfaceLidar):
 
         data = self.grab_data()
 
-        # acceleration = data[18]
-        # steering_angle = data[19]
-        # slipping_tires = data[20:24]
-        # print(slipping_tires)
-        # crash = data[24]
-
         car_position = [data[2],data[4]]
         yaw = data[11]      # angle the car is facing
 
@@ -581,7 +565,7 @@ class TM2020InterfaceTrackMap(TM2020InterfaceLidar):
             data[24],
         ], dtype='float32')
 
-        obs = [speed, gear, rpm, track_information,acceleration,steering_angle,slipping_tires,crash]
+        obs = [speed, gear, rpm, track_information, acceleration, steering_angle, slipping_tires, crash]
         self.reward_function.reset()
         return obs, {}
 

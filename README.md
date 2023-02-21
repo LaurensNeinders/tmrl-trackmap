@@ -1,5 +1,5 @@
 # tmrl-lidarmap
- Based on tmrl. uses a the road of ahead as input for the AI to improve the performance
+ Based on tmrl. Uses piece of road ahead of the car as input for the AI to improve the performance
 # TMRL
 
 [![PyPI version](https://badge.fury.io/py/tmrl.svg)](https://badge.fury.io/py/tmrl)
