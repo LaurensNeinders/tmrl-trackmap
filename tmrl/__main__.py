@@ -62,7 +62,7 @@ def main(args):
         record_reward_dist(path_reward=cfg.REWARD_PATH)
     elif args.check_env:
         if cfg.PRAGMA_LIDAR:
-            if cfg.PRAGMA_NEWTRACKMAP:
+            if cfg.PRAGMA_TRACKMAP:
                 check_env_tm20_trackmap()
             else:
                 check_env_tm20lidar()
