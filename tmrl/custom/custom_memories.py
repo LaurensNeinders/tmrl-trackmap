@@ -65,6 +65,40 @@ def get_local_buffer_sample_tm20_imgs(prev_act, obs, rew, terminated, truncated,
     return prev_act_mod, obs_mod, rew_mod, terminated_mod, truncated_mod, info_mod
 
 
+def get_local_buffer_sample_lidar_track_map(prev_act, obs, rew, terminated, truncated, info):
+    """
+    Input:
+        prev_act: action computed from a previous observation and applied to yield obs in the transition (but not influencing the unaugmented observation in real-time envs)
+        obs, rew, terminated, truncated, info: outcome of the transition
+    this function creates the object that will actually be stored in local buffers for networking
+    this is to compress the sample before sending it over the Internet/local network
+    buffers of such samples will be given as input to the append() method of the dataloading memory
+    the user must define both this function and the append() method of the dataloading memory
+    CAUTION: prev_act is the action that comes BEFORE obs (i.e. prev_obs, prev_act(prev_obs), obs(prev_act))
+    """
+    obs_mod = (obs[0], obs[1][-19:],obs[2])  # speed and most recent LIDAR only and track_map
+    rew_mod = np.float32(rew)
+    terminated_mod = terminated
+    truncated_mod = truncated
+    return prev_act, obs_mod, rew_mod, terminated_mod, truncated_mod, info
+
+
+def get_local_buffer_sample_new_track_map(prev_act, obs, rew, terminated, truncated, info):
+    """
+    Input:
+        prev_act: action computed from a previous observation and applied to yield obs in the transition (but not influencing the unaugmented observation in real-time envs)
+        obs, rew, terminated, truncated, info: outcome of the transition
+    this function creates the object that will actually be stored in local buffers for networking
+    this is to compress the sample before sending it over the Internet/local network
+    buffers of such samples will be given as input to the append() method of the dataloading memory
+    the user must define both this function and the append() method of the dataloading memory
+    CAUTION: prev_act is the action that comes BEFORE obs (i.e. prev_obs, prev_act(prev_obs), obs(prev_act))
+    """
+    obs_mod = (obs[0], obs[1], obs[2], obs[3], obs[4], obs[5], obs[6], obs[7])  # speed, gear, rpm, track_information,acceleration,steering_angle,slipping_tires,crash
+    rew_mod = np.float32(rew)
+    terminated_mod = terminated
+    truncated_mod = truncated
+    return prev_act, obs_mod, rew_mod, terminated_mod, truncated_mod, info
 # FUNCTIONS ====================================================
 
 

@@ -7,7 +7,7 @@ import json
 import tmrl.config.config_constants as cfg
 import tmrl.config.config_objects as cfg_obj
 from tmrl.tools.record import record_reward_dist
-from tmrl.tools.check_environment import check_env_tm20lidar, check_env_tm20full
+from tmrl.tools.check_environment import check_env_tm20lidar, check_env_tm20full, check_env_tm20_trackmap
 from tmrl.envs import GenericGymEnv
 from tmrl.networking import Server, Trainer, RolloutWorker
 from tmrl.util import partial
@@ -42,18 +42,7 @@ def main(args):
         elif args.benchmark:
             rw.run_env_benchmark(nb_steps=1000, test=False)
         else:
-            rw.run_episodes(100,1)
-            print(get_all_observed_track_parts())
-            np.savetxt('saved_tracks/tmrl-test/observed_run/observed_track_car_pos_human.csv', np.array(get_all_observed_track_parts()[4],dtype=object), delimiter=',')
-
-            l_x,l_z = np.loadtxt('saved_tracks/tmrl-test/track_left_smooth.csv', delimiter=',')
-            r_x,r_z = np.loadtxt('saved_tracks/tmrl-test/track_right_smooth.csv', delimiter=',')
-            pos = np.loadtxt('saved_tracks/tmrl-test/observed_run/observed_track_car_pos_human.csv',delimiter=',')
-
-            plt.plot(r_x, r_z, 'ro')
-            plt.plot(l_x, l_z, 'ro')
-            plt.plot(pos.T[0], pos.T[1],'bo')
-            plt.show()
+            rw.run_episodes(1000,1)
     elif args.trainer:
         trainer = Trainer(training_cls=cfg_obj.TRAINER,
                           server_ip=cfg.SERVER_IP_FOR_TRAINER,
@@ -73,7 +62,10 @@ def main(args):
         record_reward_dist(path_reward=cfg.REWARD_PATH)
     elif args.check_env:
         if cfg.PRAGMA_LIDAR:
-            check_env_tm20lidar()
+            if cfg.PRAGMA_NEWTRACKMAP:
+                check_env_tm20_trackmap()
+            else:
+                check_env_tm20lidar()
         else:
             check_env_tm20full()
     else:
