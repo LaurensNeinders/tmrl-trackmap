@@ -11,6 +11,7 @@ from tmrl.tools.check_environment import check_env_tm20lidar, check_env_tm20full
 from tmrl.envs import GenericGymEnv
 from tmrl.networking import Server, Trainer, RolloutWorker
 from tmrl.util import partial
+from tmrl.tools.record_track import record_track_map
 
 # Custom imports
 from tmrl.custom.custom_gym_interfaces import get_all_observed_track_parts
@@ -68,6 +69,8 @@ def main(args):
                 check_env_tm20lidar()
         else:
             check_env_tm20full()
+    elif args.record_track:
+        record_track_map()
     else:
         raise ArgumentTypeError('Enter a valid argument')
 
@@ -83,6 +86,8 @@ if __name__ == "__main__":
     parser.add_argument('--check-environment', dest='check_env', action='store_true', help='utility to check the environment')
     parser.add_argument('--no-wandb', dest='no_wandb', action='store_true', help='(use with --trainer) if you do not want to log results on Weights and Biases, use this option')
     parser.add_argument('-d', '--config', type=json.loads, default={}, help='dictionary containing configuration options (modifiers) for the rtgym environment')
+   # parser.add_argument('--record-track',dest='record_track',help='records track that is used for trackmap-environment')
+   # parser.add_argument('track-name', dest='track_name')
     arguments = parser.parse_args()
     logging.info(arguments)
 

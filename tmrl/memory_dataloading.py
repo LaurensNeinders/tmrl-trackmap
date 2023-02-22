@@ -12,7 +12,7 @@ import numpy as np
 from torch.utils.data import DataLoader, Dataset, Sampler
 
 # local imports
-from tmrl.util import collate
+from tmrl.util import collate_torch
 
 
 __docformat__ = "google"
@@ -189,7 +189,7 @@ class MemoryDataloading(ABC):  # FIXME: should be an instance of Dataset but par
     def sample(self, indices=None):
         indices = self.sample_indices() if indices is None else indices
         batch = [self[idx] for idx in indices]
-        batch = collate(batch, self.device)
+        batch = collate_torch(batch, self.device)
         return batch
 
 
