@@ -13,7 +13,7 @@ if sys.version_info < (3, 7):
     sys.exit('Sorry, Python < 3.7 is not supported. We use dataclasses that have been introduced in 3.7.')
 
 
-RESOURCES_URL = "https://github.com/trackmania-rl/tmrl/releases/download/v0.4.0/resources.zip"
+RESOURCES_SRC = "./resources.zip"
 
 
 def url_retrieve(url: str, outfile: Path, overwrite: bool = False):
@@ -37,6 +37,7 @@ TMRL_FOLDER = HOME_FOLDER / "TmrlData"
 
 # download relevant items IF THE tmrl FOLDER DOESN'T EXIST:
 if not TMRL_FOLDER.exists():
+    # print("we create a new tmrldata folder")
     CHECKPOINTS_FOLDER = TMRL_FOLDER / "checkpoints"
     DATASET_FOLDER = TMRL_FOLDER / "dataset"
     REWARD_FOLDER = TMRL_FOLDER / "reward"
@@ -50,7 +51,7 @@ if not TMRL_FOLDER.exists():
 
     # download resources:
     RESOURCES_TARGET = TMRL_FOLDER / "resources.zip"
-    url_retrieve(RESOURCES_URL, RESOURCES_TARGET)
+    copy2(RESOURCES_SRC, RESOURCES_TARGET)
 
     # unzip downloaded resources:
     with ZipFile(RESOURCES_TARGET, 'r') as zip_ref:
@@ -65,6 +66,9 @@ if not TMRL_FOLDER.exists():
     copy2(RESOURCES_FOLDER / "reward.pkl", REWARD_FOLDER)
     copy2(RESOURCES_FOLDER / "SAC_4_LIDAR_pretrained.tmod", WEIGHTS_FOLDER)
     copy2(RESOURCES_FOLDER / "SAC_4_imgs_pretrained.tmod", WEIGHTS_FOLDER)
+    copy2(RESOURCES_FOLDER / "SAC_trackmap_pretrained.tmod", WEIGHTS_FOLDER)
+    # copy2(RESOURCES_FOLDER / "SAC_trackmap_pretrained_t.tcpt", CHECKPOINTS_FOLDER)
+
 
     # on Windows, look for OpenPlanet:
     if platform.system() == "Windows":
@@ -73,12 +77,12 @@ if not TMRL_FOLDER.exists():
         if OPENPLANET_FOLDER.exists():
             # copy the OpenPlanet script:
             try:
-                OP_SCRIPTS_FOLDER = OPENPLANET_FOLDER / "Scripts"
+                OP_SCRIPTS_FOLDER = OPENPLANET_FOLDER / 'Plugins' / 'GrabData'
                 OP_SCRIPTS_FOLDER.mkdir(parents=True, exist_ok=True)
-                TM20_SCRIPT_FILE = RESOURCES_FOLDER / 'Scripts' / 'Plugin_GrabData_0_1.as'
-                TM20_SCRIPT_FILE_SIG = RESOURCES_FOLDER / 'Scripts' / 'Plugin_GrabData_0_1.as.sig'
+                TM20_SCRIPT_FILE = RESOURCES_FOLDER / 'Plugins' / 'GrabData' / 'Plugin_GrabData_extended.as'
+                TM20_SCRIPT_FILE_INFO = RESOURCES_FOLDER / 'Plugins' / 'GrabData' /  'info.toml'
                 copy2(TM20_SCRIPT_FILE, OP_SCRIPTS_FOLDER)
-                copy2(TM20_SCRIPT_FILE_SIG, OP_SCRIPTS_FOLDER)
+                copy2(TM20_SCRIPT_FILE_INFO, OP_SCRIPTS_FOLDER)
             except Exception as e:
                 print(
                     f"An exception was caught when trying to copy the OpenPlanet script and signature automatically. \
