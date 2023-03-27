@@ -43,7 +43,7 @@ def main(args):
         elif args.benchmark:
             rw.run_env_benchmark(nb_steps=1000, test=False)
         else:
-            rw.run_episodes(1000)
+            rw.run_episodes(10000)
     elif args.trainer:
         trainer = Trainer(training_cls=cfg_obj.TRAINER,
                           server_ip=cfg.SERVER_IP_FOR_TRAINER,

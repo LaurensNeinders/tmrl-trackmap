@@ -76,7 +76,7 @@ def get_local_buffer_sample_track_map(prev_act, obs, rew, terminated, truncated,
     the user must define both this function and the append() method of the dataloading memory
     CAUTION: prev_act is the action that comes BEFORE obs (i.e. prev_obs, prev_act(prev_obs), obs(prev_act))
     """
-    obs_mod = (obs[0], obs[1], obs[2], obs[3], obs[4], obs[5], obs[6], obs[7])  # speed, gear, rpm, track_information,acceleration,steering_angle,slipping_tires,crash
+    obs_mod = (obs[0], obs[1], obs[2], obs[3], obs[4], obs[5], obs[6], obs[7],obs[8])  # speed, gear, rpm, track_information,acceleration,steering_angle,slipping_tires,crash,failure_counter
     rew_mod = np.float32(rew)
     terminated_mod = terminated
     truncated_mod = truncated
@@ -514,10 +514,10 @@ class MemoryTMTrackMap(MemoryTM):
         # imgs_new_obs = np.ndarray.flatten(imgs_new_obs)
         # imgs_last_obs = np.ndarray.flatten(imgs_last_obs)
 
-        last_obs = (self.data[2][idx_last], self.data[3][idx_last], self.data[4][idx_last],self.data[10][idx_last],self.data[11][idx_last],self.data[12][idx_last],self.data[13][idx_last],self.data[14][idx_last], *last_act_buf)
+        last_obs = (self.data[2][idx_last], self.data[3][idx_last], self.data[4][idx_last],self.data[10][idx_last],self.data[11][idx_last],self.data[12][idx_last],self.data[13][idx_last],self.data[14][idx_last],self.data[15][idx_last], *last_act_buf)
         new_act = self.data[1][idx_now]
         rew = np.float32(self.data[6][idx_now])
-        new_obs = (self.data[2][idx_now],self.data[3][idx_now], self.data[4][idx_now],self.data[10][idx_now],self.data[11][idx_now],self.data[12][idx_now],self.data[13][idx_now],self.data[14][idx_now], *new_act_buf)
+        new_obs = (self.data[2][idx_now],self.data[3][idx_now], self.data[4][idx_now],self.data[10][idx_now],self.data[11][idx_now],self.data[12][idx_now],self.data[13][idx_now],self.data[14][idx_now],self.data[15][idx_now], *new_act_buf)
         terminated = self.data[8][idx_now]
         truncated = self.data[9][idx_now]
         info = self.data[7][idx_now]
@@ -551,6 +551,7 @@ class MemoryTMTrackMap(MemoryTM):
         d12 = [b[1][5] for b in buffer.memory]  # steering_angle
         d13 = [b[1][6] for b in buffer.memory]  # slipping_tires
         d14 = [b[1][7] for b in buffer.memory]  # crash
+        d15 = [b[1][8] for b in buffer.memory]  # failure counter
 
         if self.__len__() > 0:
             self.data[0] += d0
@@ -568,6 +569,7 @@ class MemoryTMTrackMap(MemoryTM):
             self.data[12] += d12
             self.data[13] += d13
             self.data[14] += d14
+            self.data[15] += d15
         else:
             self.data.append(d0)
             self.data.append(d1)
@@ -584,6 +586,7 @@ class MemoryTMTrackMap(MemoryTM):
             self.data.append(d12)
             self.data.append(d13)
             self.data.append(d14)
+            self.data.append(d15)
 
         to_trim = self.__len__() - self.memory_size
         if to_trim > 0:
@@ -602,6 +605,7 @@ class MemoryTMTrackMap(MemoryTM):
             self.data[12] = self.data[12][to_trim:]
             self.data[13] = self.data[13][to_trim:]
             self.data[14] = self.data[14][to_trim:]
+            self.data[15] = self.data[15][to_trim:]
 
         return self
 

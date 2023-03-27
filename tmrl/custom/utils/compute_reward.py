@@ -64,10 +64,11 @@ class RewardFunction:
                 self.failure_counter += 1
                 if self.failure_counter > self.nb_zero_rew_before_failure:
                     terminated = True
+
         else:
             self.failure_counter = 0
         self.cur_idx = best_index
-        return reward, terminated
+        return reward, terminated, self.failure_counter
 
     def reset(self):
         self.cur_idx = 0

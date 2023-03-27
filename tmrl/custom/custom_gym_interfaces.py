@@ -212,7 +212,7 @@ class TM2020Interface(RealTimeGymInterface):
         rpm = np.array([
             data[10],
         ], dtype='float32')
-        rew, terminated = self.reward_function.compute_reward(pos=np.array([data[2], data[3], data[4]]))
+        rew, terminated, failure_counter = self.reward_function.compute_reward(pos=np.array([data[2], data[3], data[4]]))
         self.img_hist.append(img)
         imgs = np.array(list(self.img_hist))
         obs = [speed, gear, rpm, imgs]
@@ -299,7 +299,7 @@ class TM2020InterfaceLidar(TM2020Interface):
         img, speed, data = self.grab_lidar_speed_and_data() # img is lidar
         car_position = [data[2],data[4]]
         all_observed_track_parts[4].append(car_position)
-        rew, terminated = self.reward_function.compute_reward(pos=np.array([data[2], data[3], data[4]])) # data[2-4] are the position, from that the reward is computed
+        rew, terminated, failure_counter = self.reward_function.compute_reward(pos=np.array([data[2], data[3], data[4]])) # data[2-4] are the position, from that the reward is computed
         self.img_hist.append(img)
         imgs = np.array(list(self.img_hist), dtype='float32')
         obs = [speed, imgs]
@@ -348,7 +348,7 @@ class TM2020InterfaceLidarProgress(TM2020InterfaceLidar):
         obs must be a list of numpy arrays
         """
         img, speed, data = self.grab_lidar_speed_and_data()
-        rew, terminated = self.reward_function.compute_reward(pos=np.array([data[2], data[3], data[4]]))
+        rew, terminated, failure_counter = self.reward_function.compute_reward(pos=np.array([data[2], data[3], data[4]]))
         progress = np.array([self.reward_function.cur_idx / self.reward_function.datalen], dtype='float32')
         self.img_hist.append(img)
         imgs = np.array(list(self.img_hist), dtype='float32')
@@ -395,7 +395,8 @@ class TM2020InterfaceTrackMap(TM2020InterfaceLidar):
         steering_angle = spaces.Box(low=-1, high=1.0, shape=(1, ))
         slipping_tires = spaces.Box(low=0.0, high=1, shape=(4,))
         crash = spaces.Box(low=0.0, high=1, shape=(1, ))
-        return spaces.Tuple((speed,gear,rpm,track_information,acceleration,steering_angle,slipping_tires,crash))
+        failure_counter = spaces.Box(low=0.0,high=15,shape=(1,))
+        return spaces.Tuple((speed,gear,rpm,track_information,acceleration,steering_angle,slipping_tires,crash,failure_counter))
 
     def grab_data(self):
         data = self.client.retrieve_data()
@@ -413,7 +414,8 @@ class TM2020InterfaceTrackMap(TM2020InterfaceLidar):
 
         car_position = [data[2],data[4]]
         yaw = data[11]      # angle the car is facing
-
+        # if self.last_pos == car_position:
+        #     print("package loss or something")
         self.last_pos = car_position
         # retrieving map information --------------------------------------
         # Cut out a portion directly in front of the car, as input for the ai
@@ -434,7 +436,7 @@ class TM2020InterfaceTrackMap(TM2020InterfaceLidar):
         # ----------------------------------------------------------------------
 
 
-        rew, terminated = self.reward_function.compute_reward(pos=np.array([data[2], data[3], data[4]])) # data[2-4] are the position, from that the reward is computed
+
         track_information = np.array(np.append(np.append(l_x,r_x),np.append(l_z,r_z)), dtype='float32')
         speed = np.array([
             data[0],
@@ -455,19 +457,28 @@ class TM2020InterfaceTrackMap(TM2020InterfaceLidar):
         crash = np.array([
             data[24],
         ], dtype='float32')
-        obs = [speed, gear, rpm, track_information,acceleration,steering_angle,slipping_tires,crash]
+
         end_of_track = bool(data[8])
         info = {}
         crash_penalty = 0 # < 0 to give a penalty
-        if crash == 1:
-            rew += crash_penalty
+        # if crash == 1:
+            # rew += crash_penalty
+            # print("crash penalty was not given")
         if end_of_track:
-            rew += self.finish_reward
+            rew = self.finish_reward
             terminated = True
+            failure_counter = 0
             if self.save_replay:
                 mouse_save_replay_tm20()
+        else:
+            rew, terminated, failure_counter = self.reward_function.compute_reward(pos=np.array([data[2], data[3], data[4]])) # data[2-4] are the position, from that the reward is computed
+
+        failure_counter = float(failure_counter)
+        # if failure_counter > 0:
+        #     print(failure_counter)
         rew += self.constant_penalty
         rew = np.float32(rew)
+        obs = [speed, gear, rpm, track_information,acceleration,steering_angle,slipping_tires,crash,failure_counter]
         return obs, rew, terminated, info
 
     def get_track_in_front(self, car_position, look_ahead_distance, nearby_correction):
@@ -564,8 +575,8 @@ class TM2020InterfaceTrackMap(TM2020InterfaceLidar):
         crash = np.array([
             data[24],
         ], dtype='float32')
-
-        obs = [speed, gear, rpm, track_information, acceleration, steering_angle, slipping_tires, crash]
+        failure_counter = 0.0
+        obs = [speed, gear, rpm, track_information, acceleration, steering_angle, slipping_tires, crash, failure_counter]
         self.reward_function.reset()
         return obs, {}
 

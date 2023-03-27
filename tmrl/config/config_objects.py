@@ -56,6 +56,7 @@ else:
 
 CONFIG_DICT = rtgym.DEFAULT_CONFIG_DICT.copy()
 CONFIG_DICT["interface"] = INT
+# CONFIG_DICT["ep_max_length"] = 10000
 CONFIG_DICT_MODIFIERS = cfg.ENV_CONFIG["RTGYM_CONFIG"]
 for k, v in CONFIG_DICT_MODIFIERS.items():
     CONFIG_DICT[k] = v
@@ -91,10 +92,10 @@ if cfg.PRAGMA_LIDAR:
     else:
         if cfg.PRAGMA_PROGRESS:
             MEM = MemoryTMLidarProgress
+        elif cfg.PRAGMA_TRACKMAP:
+            MEM = MemoryTMTrackMap
         else:
             MEM = MemoryTMLidar
-elif cfg.PRAGMA_TRACKMAP:
-    MEM = MemoryTMTrackMap
 else:
     MEM = MemoryTMFull
 

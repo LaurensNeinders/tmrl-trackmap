@@ -38,7 +38,7 @@ def obs_preprocessor_tm_track_map_act_in_obs(obs):
     Preprocessor for the new trackMap environment
     """
     # speed, gear, rpm, track_information,acceleration,steering_angle,slipping_tires,crash
-    obs = (obs[0], obs[1], obs[2], obs[3], obs[4], obs[5], obs[6], obs[7], *obs[8:])  # >= 1  action
+    obs = (obs[0], obs[1], obs[2], obs[3], obs[4], obs[5], obs[6], obs[7], obs[8], *obs[9:])  # >= 1  action
     return obs
 
 # SAMPLE PREPROCESSING =======================================
